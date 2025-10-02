@@ -1,0 +1,11 @@
+# avvio
+docker compose up --build -d
+
+# stop
+docker compose down
+
+# creazione network
+docker network create superset_network
+
+# importazione dump
+docker exec -i external-postgres psql -U external_user -d external < dump-db.sql

@@ -1,0 +1,98 @@
+networks:
+ superset_network_dev:
+  external: true
+
+services:
+  superset:
+    build: .
+    container_name: superset
+    ports:
+      - "17788:8088"
+    environment:
+      - SUPERSET_ENV=${SUPERSET_ENV}
+      - SUPERSET_LOAD_EXAMPLES=${SUPERSET_LOAD_EXAMPLES}
+      - SUPERSET_ADMIN_USERNAME=${SUPERSET_ADMIN_USERNAME}
+      - SUPERSET_ADMIN_EMAIL=${SUPERSET_ADMIN_EMAIL}
+      - SUPERSET_ADMIN_PASSWORD=${SUPERSET_ADMIN_PASSWORD}
+      - SUPERSET_ADMIN_FIRSTNAME=${SUPERSET_ADMIN_FIRSTNAME}
+      - SUPERSET_ADMIN_LASTNAME=${SUPERSET_ADMIN_LASTNAME}
+      - SQLALCHEMY_DATABASE_URI=postgresql+psycopg2://superset:superset@db:5432/superset
+      - MAPBOX_API_KEY=pk.eyJ1IjoiZXNwbzMiLCJhIjoiY21iN3V6eXdwMDAyNDJscXQ5cnR2MjZ0ayJ9.kMZ3pI6upOC4NEuC5H-e0g
+      - PYTHONPATH=/app/pythonpath
+    volumes:
+      - superset_home:/app/superset_home
+      - ./assets/superset-logo-horiz.png:/app/superset/static/assets/images/superset-logo-horiz.png
+      - ./superset_config.py:/app/pythonpath/superset_config.py
+    networks:
+      - superset_network_dev
+    depends_on:
+      - db
+      - redis
+    entrypoint: >
+       bash -c "
+       superset db upgrade &&
+                        superset fab create-admin \ --username ${SUPERSET_ADMIN_USERNAME} \ --firstname ${SUPERSET_ADMIN_FIRSTNAME} \ --lastname ${SUPERSET_ADMIN_LASTNAME} \ --email ${SUPERSET_ADMIN_EMAIL} \ --password ${SUPERSET_ADMIN_PASSWORD}  &&
+                        superset init && gunicorn --bind 0.0.0.0:8088 --workers 4 --timeout 120 'superset.app:create_app()'"
+
+  db:
+    image: postgres:16
+    container_name: superset-db
+    environment:
+      POSTGRES_DB: superset
+      POSTGRES_USER: superset
+      POSTGRES_PASSWORD: superset
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    networks:
+      - superset_network_dev
+
+  redis:
+    image: redis:latest
+    container_name: redis
+
+  otherdb:
+    image: postgres:16
+    container_name: external-postgres
+    environment:
+      POSTGRES_DB: urbreath_dev
+      POSTGRES_USER: external_user
+      POSTGRES_PASSWORD: external_pass
+    volumes:
+      - other_db_data:/var/lib/postgresql/data
+    networks:
+      - superset_network_dev
+      
+      
+  admindb:
+    image: dpage/pgadmin4
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=salvatoremanuel.esposito@eng.it
+      - PGADMIN_DEFAULT_PASSWORD=cFSLtACkqbBY
+    ports:
+      - 17709:80
+    restart: always
+
+  embeddedsuperset:
+    build: ./embeddedsuperset  
+    container_name: embeddedsuperset
+    environment:
+      - REACT_APP_SUPERSET_URL=${REACT_APP_SUPERSET_URL}
+      - REACT_APP_DASHBOARD_MADRID=${REACT_APP_DASHBOARD_MADRID}
+      - REACT_APP_DASHBOARD_CLUJ=${REACT_APP_DASHBOARD_CLUJ}
+      - REACT_APP_DASHBOARD_TALLINN=${REACT_APP_DASHBOARD_TALLINN}
+      - REACT_APP_DASHBOARD_LEUVEN=${REACT_APP_DASHBOARD_LEUVEN}
+      - REACT_APP_DASHBOARD_MADRID_LINK=${REACT_APP_DASHBOARD_MADRID_LINK}
+      - REACT_APP_DASHBOARD_CLUJ_LINK=${REACT_APP_DASHBOARD_CLUJ_LINK}
+      - REACT_APP_DASHBOARD_LEUVEN_LINK=${REACT_APP_DASHBOARD_LEUVEN_LINK}
+      - REACT_APP_DASHBOARD_TALLINN_LINK=${REACT_APP_DASHBOARD_TALLINN_LINK}
+    ports:
+      - "3000:80"
+    depends_on:
+      - superset
+    networks:
+      - superset_network_dev
+
+volumes:
+  db_data:
+  superset_home:
+  other_db_data:
