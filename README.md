@@ -1,4 +1,5 @@
-# 🌟 KPI & Analytics
+# KPI & Analytics
+(./assets/superset-demo.png)
 
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![Status](https://img.shields.io/badge/status-active-success)
