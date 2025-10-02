@@ -1,4 +1,3 @@
-# KPI & Analytics
 ![Logo](./assets/superset-repo-logo.png)
 
 ![License](https://img.shields.io/badge/license-MIT-green)
