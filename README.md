@@ -9,7 +9,7 @@
 
 ## 🚀 Demo
 
-![Demo Screenshot](./assets/superset-demos.png)  
+![Demo Screenshot](./assets/superset-demo.png)  
 
 
 ---
