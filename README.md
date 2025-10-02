@@ -1,5 +1,5 @@
 # KPI & Analytics
-![Logo](./assets/superset-logo.png)
+![Logo](./assets/superset-logo-horiz.png)
 
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![Status](https://img.shields.io/badge/status-active-success)
