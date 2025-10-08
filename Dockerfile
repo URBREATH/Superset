@@ -4,11 +4,8 @@ USER root
 RUN pip install --upgrade pip
 
 # Installa pacchetti aggiuntivi necessari
-RUN pip install --no-cache-dir flask-cors
+RUN pip install --no-cache-dir flask-cors psycopg2-binary
 
-
-
-RUN pip install psycopg2-binary
 USER superset
 
 
