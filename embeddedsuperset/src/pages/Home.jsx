@@ -62,7 +62,8 @@ function Home() {
             <div className="card-body">
               <small className="card-subtitle">{card.subtitle}</small>
               <h3 className="card-title">{card.title}</h3>
-              <p className="card-description">{card.description}</p>
+              <p className="card-description"
+               dangerouslySetInnerHTML={{ __html: card.description }}></p>
             </div>
           </Link>
         ))}
