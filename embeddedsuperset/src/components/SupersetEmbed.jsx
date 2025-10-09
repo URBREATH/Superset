@@ -4,7 +4,7 @@ import { embedDashboard } from "@superset-ui/embedded-sdk";
 
 function SupersetEmbed({ dashboardId }) {
   useEffect(() => {
-    const supersetUrl = process.env.REACT_APP_SUPERSET_URL; // es. http://localhost:8088
+    const supersetUrl = process.env.REACT_APP_SUPERSET_URL; // es. http://superset:8088
     const supersetApiUrl = supersetUrl + "/api/v1/security";
 
     async function loadDashboard() {
