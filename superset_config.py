@@ -13,7 +13,7 @@ MAPBOX_API_KEY="pk.eyJ1IjoiZXNwbzMiLCJhIjoiY21iN3V6eXdwMDAyNDJscXQ5cnR2MjZ0ayJ9.
 PYTHONPATH="/app/pythonpath"
 APP_NAME = "URBreath"
 
-AUTH_ROLE_PUBLIC = "Admin"  # Tutti possono fare tutto
+AUTH_ROLE_PUBLIC = "Public"  # Tutti possono fare tutto
 
 # Disattiva CSRF per le embed request
 WTF_CSRF_ENABLED = False
