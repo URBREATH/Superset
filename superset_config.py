@@ -38,3 +38,8 @@ Talisman(
     content_security_policy=None,
     frame_options=None
 )
+
+SUPERSET_WEBSERVER_TIMEOUT = 300
+SQLLAB_ASYNC_TIME_LIMIT_SEC = 300
+
+GUEST_ROLE_NAME = "Gamma"
