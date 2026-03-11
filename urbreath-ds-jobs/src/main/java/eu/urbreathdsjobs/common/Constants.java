@@ -1,0 +1,14 @@
+package eu.urbreathdsjobs.common;
+
+public class Constants {
+	
+	public final static String MEASUREMENT_TYPE_PROJECTION = "PROJECTION";
+	public final static String MEASUREMENT_TYPE_ACTUAL = "ACTUAL";
+	public final static String MEASUREMENT_COD_SCENARIO = "SCENARIO";
+	public final static String MEASUREMENT_SOURCE = "SOURCE";
+	
+	public final static String PARAM_ID = "PARAM_ID";
+	public final static String SENSOR_ID = "SENSOR_ID";
+	public final static String PERIOD = "PERIOD";
+
+}
