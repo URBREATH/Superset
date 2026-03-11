@@ -7,8 +7,9 @@ public enum MeasurementAttributeEnum {
 	MEASURE_SIMULATION_COD_SCENARIO(6, "Codice ente che ha prodotto la simulazione", "STRING"),
 	TERMIC_AVG(7, "Media termica con modello sinusoidale", "NUMBER"),	
 	MEASURE_HORIZON(10, "", "NUMBER"),
-	MEASURE_THRESHOLD(11, "", "NUMBER");
-	
+	MEASURE_THRESHOLD(11, "", "NUMBER"),
+	FILE_PATH(12, "Path del file da cui è stata estratta la misura", "STRING");
+
 	private final long idAttribute;
 	private final String description;
 	private final String valueType;

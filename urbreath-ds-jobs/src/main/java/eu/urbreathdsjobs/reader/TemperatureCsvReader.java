@@ -77,8 +77,19 @@ public class TemperatureCsvReader  {
             row.setYear(Integer.parseInt(fields[0].trim()));
             row.setMonth(Integer.parseInt(fields[1].trim()));
             row.setDay(Integer.parseInt(fields[2].trim()));
-            row.setTmax(Double.parseDouble(fields[3].trim()));
-            row.setTmin(Double.parseDouble(fields[4].trim()));
+            
+            if (fields[3].matches("-?\\d+(\\.\\d+)?") ) {
+            	row.setTmax(Double.parseDouble(fields[3].trim()));
+			} else {
+				row.setTmax(null);
+			}
+            
+            if (fields[4].matches("-?\\d+(\\.\\d+)?") ) {
+            	row.setTmin(Double.parseDouble(fields[4].trim()));
+            }	 else {
+            	row.setTmin(null);
+			}
+
             return row;
         });
 

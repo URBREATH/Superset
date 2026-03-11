@@ -38,7 +38,9 @@ public class TemperatureProcessor  implements ItemProcessor<TemperatureCsvRow, M
 		TaskJsonItem paramIdItem = taskJson.getItems().stream().filter(x -> x.getKey().equals(Constants.PARAM_ID)).findFirst().get();
 		TaskJsonItem sensorIdItem = taskJson.getItems().stream().filter(x -> x.getKey().equals(Constants.SENSOR_ID)).findFirst().get();
 		TaskJsonItem periodItem = taskJson.getItems().stream().filter(x -> x.getKey().equals(Constants.PERIOD)).findFirst().get();
+        TaskJsonItem objectKeyItem = taskJson.getItems().stream().filter(x -> x.getKey().equals("objectKey")).findFirst().get();
 
+		
 		LocalDateTime observationDate = LocalDateTime.of(item.getYear(), item.getMonth(), item.getDay(), 0, 0);
 		
 		
@@ -69,6 +71,8 @@ public class TemperatureProcessor  implements ItemProcessor<TemperatureCsvRow, M
 			attributes.add(createMeasurementAttribute(MeasurementAttributeEnum.TERMIC_AVG, String.valueOf(avgTermicTemp)));
 
 		}
+		
+		attributes.add(createMeasurementAttribute(MeasurementAttributeEnum.FILE_PATH, objectKeyItem.getValue()));
 		
 		measurement.setAttributes(attributes);
 		

@@ -31,6 +31,7 @@ public class TaskQueueReader {
 	            WHERE status = 0
 	            AND id_batch = ?
 	            ORDER BY id
+	            LIMIT 1
 	        """);
 
 	        reader.setPreparedStatementSetter(ps -> ps.setLong(1, batchId));

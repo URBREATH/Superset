@@ -14,6 +14,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 		"eu.urbreathdsjobs.processor",
 		"eu.urbreathdsjobs.listener",
 		"eu.urbreathdsjobs.dto",
+		"eu.urbreathdsjobs.job",
 		"eu.urbreathdsjobs.client.minio",
 		"eu.urbreathdsjobs.writer"})
 public class App {

@@ -8,25 +8,37 @@ import org.springframework.batch.core.JobParameters;
 import org.springframework.batch.core.JobParametersBuilder;
 import org.springframework.batch.core.explore.JobExplorer;
 import org.springframework.batch.core.launch.JobLauncher;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import lombok.RequiredArgsConstructor;
 
 @Component
-@RequiredArgsConstructor
 public class JobScheduler {
 	
 	private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(JobScheduler.class);
 
     private final JobLauncher jobLauncher;
     private final Job trafficJob;
+
     private final Job temperatureImportJob;
     private final JobExplorer jobExplorer;
 
     // Un lock per job
     private final Lock trafficLock = new ReentrantLock();
     private final Lock temperatureLock = new ReentrantLock();
+    
+    public JobScheduler(
+            JobLauncher jobLauncher,
+            @Qualifier("trafficJob") Job trafficJob,
+            @Qualifier("temperatureImportJob") Job temperatureImportJob,
+            JobExplorer jobExplorer) {
+        this.jobLauncher = jobLauncher;
+        this.trafficJob = trafficJob;
+        this.temperatureImportJob = temperatureImportJob;
+        this.jobExplorer = jobExplorer;
+    }
 
     @Scheduled(cron = "0 0/5 * * * *")
     public void runTrafficJob() throws Exception {
