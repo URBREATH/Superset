@@ -34,6 +34,10 @@ public class TemperatureProcessor  implements ItemProcessor<TemperatureCsvRow, M
 		.getExecutionContext()
 		.get("TASK_JSON");
 		
+        Long taskId = this.stepExecution.getJobExecution()
+                .getExecutionContext()
+                .getLong("TASK_ID");
+		
 		TaskJsonItem measurementTypeItem = taskJson.getItems().stream().filter(x -> x.getKey().equals(MeasurementAttributeEnum.MEASURE_TYPE.name())).findFirst().get();
 		TaskJsonItem paramIdItem = taskJson.getItems().stream().filter(x -> x.getKey().equals(Constants.PARAM_ID)).findFirst().get();
 		TaskJsonItem sensorIdItem = taskJson.getItems().stream().filter(x -> x.getKey().equals(Constants.SENSOR_ID)).findFirst().get();
@@ -73,6 +77,7 @@ public class TemperatureProcessor  implements ItemProcessor<TemperatureCsvRow, M
 		}
 		
 		attributes.add(createMeasurementAttribute(MeasurementAttributeEnum.FILE_PATH, objectKeyItem.getValue()));
+		attributes.add(createMeasurementAttribute(MeasurementAttributeEnum.ID_BATCH, String.valueOf(taskId)));
 		
 		measurement.setAttributes(attributes);
 		

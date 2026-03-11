@@ -8,7 +8,8 @@ public enum MeasurementAttributeEnum {
 	TERMIC_AVG(7, "Media termica con modello sinusoidale", "NUMBER"),	
 	MEASURE_HORIZON(10, "", "NUMBER"),
 	MEASURE_THRESHOLD(11, "", "NUMBER"),
-	FILE_PATH(12, "Path del file da cui è stata estratta la misura", "STRING");
+	FILE_PATH(12, "Path del file da cui è stata estratta la misura", "STRING"),
+	ID_BATCH(13, "Identificativo dell'istanza batch che ha eseguito il caricamento", "NUMBER");
 
 	private final long idAttribute;
 	private final String description;

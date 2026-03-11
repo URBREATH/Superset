@@ -21,17 +21,30 @@ public class JobStatusListener implements JobExecutionListener {
             Long taskId = jobExecution
                     .getExecutionContext()
                     .getLong("TASK_ID");
+            
+
 
             int status = jobExecution.getStatus() == BatchStatus.COMPLETED
                     ? 2
-                    : 9;
+                    : 9;  
+            
+            StringBuilder sb = new StringBuilder("");
+            jobExecution.getStepExecutions().stream()
+            .filter(s -> !(s.getStepName().contains("taskQueue"))) // nome del tuo step
+            .findFirst()
+            .ifPresent(s -> {
+            	sb.append("Righe lette: " + s.getReadCount() + "\n");
+            	sb.append("Righe saltate: " + s.getSkipCount()+ "\n");
+            	sb.append("Righe scritte: " + s.getWriteCount()+ "\n");
+            	sb.append("Righe fallite: " + s.getReadSkipCount()+ "\n");
+            });
 
             jdbcTemplate.update("""
                 UPDATE batch_job_task_queue
-                SET status = ?,
+                SET status = ?, note = ?,
                     date_mod = now()
                 WHERE id = ?
-            """, status, taskId);
+            """, status, sb.toString(), taskId);
     	}
     	
 

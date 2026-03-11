@@ -1,18 +1,10 @@
 package eu.urbreathdsjobs.reader;
 
-import java.beans.PropertyEditorSupport;
+import java.io.IOException;
 import java.io.InputStream;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.Map;
 
-import org.springframework.batch.core.StepExecution;
-import org.springframework.batch.core.StepExecutionListener;
 import org.springframework.batch.core.configuration.annotation.StepScope;
 import org.springframework.batch.item.file.FlatFileItemReader;
-import org.springframework.batch.item.file.mapping.BeanWrapperFieldSetMapper;
-import org.springframework.batch.item.file.mapping.DefaultLineMapper;
-import org.springframework.batch.item.file.transform.DelimitedLineTokenizer;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.core.io.InputStreamResource;
@@ -22,8 +14,13 @@ import eu.urbreathdsjobs.dto.TaskJson;
 import eu.urbreathdsjobs.dto.TaskJsonItem;
 import eu.urbreathdsjobs.model.TemperatureCsvRow;
 import lombok.RequiredArgsConstructor;
+import software.amazon.awssdk.awscore.exception.AwsServiceException;
+import software.amazon.awssdk.core.exception.SdkClientException;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
+import software.amazon.awssdk.services.s3.model.InvalidObjectStateException;
+import software.amazon.awssdk.services.s3.model.NoSuchKeyException;
+import software.amazon.awssdk.services.s3.model.S3Exception;
 
 
 @Component
@@ -38,7 +35,7 @@ public class TemperatureCsvReader  {
     public FlatFileItemReader<TemperatureCsvRow> csvTemperatureReader(
             @Value("#{jobExecutionContext['TASK_JSON']}") TaskJson taskJson,
             @Value("#{jobExecutionContext['TASK_ID']}") String taskId
-    		) {
+    		)  {
 //    	TaskJson taskJson = null;
 //    	String taskId = null;
 //    	
@@ -64,8 +61,6 @@ public class TemperatureCsvReader  {
                 .build();
 
         InputStream inputStream =  s3Client.getObject(request);
-        
-
 
         FlatFileItemReader<TemperatureCsvRow> reader = new FlatFileItemReader<>();
 
