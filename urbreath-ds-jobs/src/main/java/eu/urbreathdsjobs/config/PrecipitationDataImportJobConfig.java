@@ -18,16 +18,17 @@ import eu.urbreathdsjobs.listener.JobStatusListener;
 import eu.urbreathdsjobs.listener.TaskAvailabilityDecider;
 import eu.urbreathdsjobs.model.BatchJobTask;
 import eu.urbreathdsjobs.model.Measurement;
+import eu.urbreathdsjobs.model.PrecipitationCsvRow;
 import eu.urbreathdsjobs.model.TemperatureCsvRow;
+import eu.urbreathdsjobs.processor.PrecipitationProcessor;
 import eu.urbreathdsjobs.processor.TaskQueueProcessor;
-import eu.urbreathdsjobs.processor.TemperatureProcessor;
 import eu.urbreathdsjobs.writer.MeasurementWriter;
 import lombok.RequiredArgsConstructor;
 
 @Configuration
 @RequiredArgsConstructor
 @EnableBatchProcessing
-public class TemperatureDataImportJobConfig {
+public class PrecipitationDataImportJobConfig {
 
 	private final JobRepository jobRepository;
 	private final PlatformTransactionManager transactionManager;
@@ -36,8 +37,8 @@ public class TemperatureDataImportJobConfig {
 	
 
 	// step:importTrafficDataStep reader/processor/writer
-	private final FlatFileItemReader<TemperatureCsvRow> csvTemperatureReader;
-	private final TemperatureProcessor temperatureProcessor;
+	private final FlatFileItemReader<PrecipitationCsvRow> csvPrecipitationReader;
+	private final PrecipitationProcessor precipitationProcessor;
 	private final MeasurementWriter measurementItemWriter;
 	
 	private final JdbcCursorItemReader<BatchJobTask> jdbcTaskQueueReader;
@@ -49,9 +50,9 @@ public class TemperatureDataImportJobConfig {
 	private final TaskAvailabilityDecider decider;
 
 	@Bean
-	public Step taskQueueTemperatureImportStep() {
+	public Step taskQueuePrecipitationImportStep() {
 
-		return new StepBuilder("taskQueueTemperatureImportStep", jobRepository)
+		return new StepBuilder("taskQueuePrecipitationImportStep", jobRepository)
 				.<BatchJobTask, BatchJobTask>chunk(1, transactionManager)
 				.reader(jdbcTaskQueueReader)
 				.processor(taskProcessor)
@@ -60,21 +61,21 @@ public class TemperatureDataImportJobConfig {
 	}
 
 	@Bean
-	public Step temperatureImportStep() {
-		return new StepBuilder("temperatureImportStep", jobRepository)
-				.<TemperatureCsvRow,Measurement>chunk(1000, transactionManager)
-				.reader(csvTemperatureReader)
-				.processor(temperatureProcessor)
+	public Step precipitationImportStep() {
+		return new StepBuilder("precipitationImportStep", jobRepository)
+				.<PrecipitationCsvRow,Measurement>chunk(1000, transactionManager)
+				.reader(csvPrecipitationReader)
+				.processor(precipitationProcessor)
 				.writer(measurementItemWriter)
 				.build();
 	}
 
 	@Bean
-	public Job temperatureImportJob() {
-		return new JobBuilder("temperatureImportJob", jobRepository)
-				.start(taskQueueTemperatureImportStep())
+	public Job precipitationImportJob() {
+		return new JobBuilder("precipitationImportJob", jobRepository)
+				.start(taskQueuePrecipitationImportStep())
 	            .next(decider)
-                	.on("TASKS_AVAILABLE").to(temperatureImportStep())
+                	.on("TASKS_AVAILABLE").to(precipitationImportStep())
                 	.from(decider).on("NO_TASKS").end()
                  .end()
 				.listener(jobStatusListener)

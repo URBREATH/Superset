@@ -15,10 +15,11 @@ import eu.urbreathdsjobs.dto.TaskJson;
 import eu.urbreathdsjobs.dto.TaskJsonItem;
 import eu.urbreathdsjobs.model.Measurement;
 import eu.urbreathdsjobs.model.MeasurementAttribute;
+import eu.urbreathdsjobs.model.PrecipitationCsvRow;
 import eu.urbreathdsjobs.model.TemperatureCsvRow;
 
 @Component
-public class TemperatureProcessor  implements ItemProcessor<TemperatureCsvRow, Measurement>, StepExecutionListener{
+public class PrecipitationProcessor  implements ItemProcessor<PrecipitationCsvRow, Measurement>, StepExecutionListener{
 	
 	private StepExecution stepExecution;
 	
@@ -27,7 +28,7 @@ public class TemperatureProcessor  implements ItemProcessor<TemperatureCsvRow, M
 	
 
 	@Override
-	public Measurement process(TemperatureCsvRow item) throws Exception {
+	public Measurement process(PrecipitationCsvRow item) throws Exception {
 		// TODO Auto-generated method stub
 		TaskJson taskJson = (TaskJson) this.stepExecution
 		.getJobExecution()
@@ -54,19 +55,8 @@ public class TemperatureProcessor  implements ItemProcessor<TemperatureCsvRow, M
 		measurement.setPeriod(periodItem.getValue());
 		measurement.setDateFrom(observationDate);	
 		measurement.setDateTo(observationDate);
-		measurement.setMax(item.getTmax());
-		measurement.setMin(item.getTmin());
-		
-		Double avgTermicTemp = null;
-		
-		if (item.getTmax() != null && item.getTmin() != null) {
-			measurement.setAvg((item.getTmax() + item.getTmin()) / 2.0);
-			avgTermicTemp = (double) (item.getTmin() + ((item.getTmax() - item.getTmin()) / Math.PI));
-		}
-		
-		
-		
-		
+		measurement.setVal(item.getMmRain());
+
 		List<MeasurementAttribute> attributes = new ArrayList<>();
 		
 		if (Constants.MEASUREMENT_TYPE_PROJECTION.equals(measurementTypeItem.getValue())) {
@@ -81,9 +71,7 @@ public class TemperatureProcessor  implements ItemProcessor<TemperatureCsvRow, M
 		} else {
 			attributes.add(createMeasurementAttribute(MeasurementAttributeEnum.MEASURE_TYPE,Constants.MEASUREMENT_TYPE_ACTUAL));
 			
-			if (avgTermicTemp != null) {
-				attributes.add(createMeasurementAttribute(MeasurementAttributeEnum.TERMIC_AVG, String.valueOf(avgTermicTemp)));
-			}
+
 
 		}
 		

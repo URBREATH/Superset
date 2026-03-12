@@ -1,5 +1,13 @@
 package eu.urbreathdsjobs.model;
 
-public class PrecipitationCsvRow {
+import lombok.Data;
 
+@Data
+public class PrecipitationCsvRow {
+	private Integer year;
+	private Integer month;
+	private Integer day;
+	private Double mmRain;
+
+	public PrecipitationCsvRow() {}
 }

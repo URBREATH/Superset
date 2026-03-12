@@ -24,6 +24,7 @@ public class JobScheduler {
 
     private final Job temperatureImportJob;
     private final JobExplorer jobExplorer;
+    private final Job precipitationImportJob;
 
     // Un lock per job
     private final Lock trafficLock = new ReentrantLock();
@@ -33,21 +34,28 @@ public class JobScheduler {
             JobLauncher jobLauncher,
             @Qualifier("trafficJob") Job trafficJob,
             @Qualifier("temperatureImportJob") Job temperatureImportJob,
+            @Qualifier("precipitationImportJob") Job precipitationImportJob,
             JobExplorer jobExplorer) {
         this.jobLauncher = jobLauncher;
         this.trafficJob = trafficJob;
         this.temperatureImportJob = temperatureImportJob;
+        this.precipitationImportJob = precipitationImportJob;
         this.jobExplorer = jobExplorer;
     }
 
-    @Scheduled(cron = "0 0/5 * * * *")
+    @Scheduled(cron = "0 0/10 * * * *")
     public void runTrafficJob() throws Exception {
         runJob(trafficJob, trafficLock, 1L);
     }
 
-    @Scheduled(cron = "0 0/5 * * * *")
+    @Scheduled(cron = "0 0/2 * * * *")
     public void runTemperatureImportJob() throws Exception {
         runJob(temperatureImportJob, temperatureLock, 2L);
+    }
+    
+    @Scheduled(cron = "0 0/20 * * * *")
+    public void runPrecipitationImportJob() throws Exception {
+        runJob(precipitationImportJob, temperatureLock, 3L);
     }
 
     private void runJob(Job job, Lock lock, Long batchID) throws Exception {
