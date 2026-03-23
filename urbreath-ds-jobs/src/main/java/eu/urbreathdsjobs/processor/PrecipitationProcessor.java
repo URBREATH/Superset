@@ -16,20 +16,16 @@ import eu.urbreathdsjobs.dto.TaskJsonItem;
 import eu.urbreathdsjobs.model.Measurement;
 import eu.urbreathdsjobs.model.MeasurementAttribute;
 import eu.urbreathdsjobs.model.PrecipitationCsvRow;
-import eu.urbreathdsjobs.model.TemperatureCsvRow;
 
 @Component
 public class PrecipitationProcessor  implements ItemProcessor<PrecipitationCsvRow, Measurement>, StepExecutionListener{
 	
 	private StepExecution stepExecution;
-	
 
-
-	
 
 	@Override
 	public Measurement process(PrecipitationCsvRow item) throws Exception {
-		// TODO Auto-generated method stub
+
 		TaskJson taskJson = (TaskJson) this.stepExecution
 		.getJobExecution()
 		.getExecutionContext()

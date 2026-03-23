@@ -28,7 +28,6 @@ public class TemperatureProcessor  implements ItemProcessor<TemperatureCsvRow, M
 
 	@Override
 	public Measurement process(TemperatureCsvRow item) throws Exception {
-		// TODO Auto-generated method stub
 		TaskJson taskJson = (TaskJson) this.stepExecution
 		.getJobExecution()
 		.getExecutionContext()

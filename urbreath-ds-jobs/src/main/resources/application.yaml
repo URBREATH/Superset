@@ -1,8 +1,18 @@
 spring:
   datasource:
-    url: jdbc:postgresql://127.0.1.1:5433/urbreath_dev
-    username: external_user
-    password: external_pass
+    url: jdbc:postgresql://188.34.141.13:57708/urbreath_dev?reWriteBatchedInserts=true
+    username: ENC(XHg8ccaWwUt/U+oyHz0Bhfm8XGdl2eFAkXn3fS19M8B7rEN+zw/1Twda38LnmZbQ)
+    password: ENC(9nnc1qyTdEIcn7H2ifwzdegpa59v+xk/2di0FRgUw04l8mH4kq1iUEsxjC7SObcc)
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 5
+      connection-timeout: 30000
+      max-lifetime: 540000          
+      keepalive-time: 30000        
+      validation-timeout: 5000
+      connection-test-query: SELECT 1
+      data-source-properties:
+         rewriteBatchedStatements: true
 
   batch:
     jdbc:
@@ -13,7 +23,7 @@ spring:
 minio:
     endpoint: https://minio-api-dev.urbreath.tech/
     access-key: Municipia
-    secret-key: zS3fx4zeECPuc4K
+    secret-key: ENC(ljzGnSiPhDa53RLIDqr9/svz8s9jHvF9B+ZDTj722s3m59kRN8vUY4rjo8dl+UuU)
   
   
   

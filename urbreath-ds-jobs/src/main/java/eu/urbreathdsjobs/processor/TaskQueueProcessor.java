@@ -20,8 +20,6 @@ public class TaskQueueProcessor implements ItemProcessor<BatchJobTask, BatchJobT
 
     @Override
     public BatchJobTask process(BatchJobTask item) throws JsonMappingException, JsonProcessingException {
-
-        // Salvo JSON nel Job Context
     	
     	if (item.getJsonParam() != null && !item.getJsonParam().isEmpty()) {
     		ObjectMapper mapper = new ObjectMapper();
