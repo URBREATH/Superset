@@ -22,7 +22,7 @@ spring:
 
 minio:
     endpoint: https://minio-api-dev.urbreath.tech/
-    access-key: Municipia
+    access-key: ENC(X1kGhrV9p8auwyr2FYmo4CnVG3bqVOCAd+MpGdRxv1CjHQ44B2KA+NQ72XLFz7WN)
     secret-key: ENC(ljzGnSiPhDa53RLIDqr9/svz8s9jHvF9B+ZDTj722s3m59kRN8vUY4rjo8dl+UuU)
   
   

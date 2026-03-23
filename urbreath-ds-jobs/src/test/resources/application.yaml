@@ -1,8 +1,8 @@
 spring:
   datasource:
     url: jdbc:postgresql://127.0.1.1:5433/urbreath_dev
-    username: external_user
-    password: external_pass
+    username: ENC(XHg8ccaWwUt/U+oyHz0Bhfm8XGdl2eFAkXn3fS19M8B7rEN+zw/1Twda38LnmZbQ)
+    password: ENC(9nnc1qyTdEIcn7H2ifwzdegpa59v+xk/2di0FRgUw04l8mH4kq1iUEsxjC7SObcc)
 
 
   batch:
@@ -14,5 +14,5 @@ spring:
   
 minio:
    endpoint: https://minio-api-dev.urbreath.tech/
-   access-key: Municipia
-   secret-key: zS3fx4zeECPuc4K
+   access-key: ENC(X1kGhrV9p8auwyr2FYmo4CnVG3bqVOCAd+MpGdRxv1CjHQ44B2KA+NQ72XLFz7WN)
+   secret-key: ENC(ljzGnSiPhDa53RLIDqr9/svz8s9jHvF9B+ZDTj722s3m59kRN8vUY4rjo8dl+UuU)
