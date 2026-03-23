@@ -53,6 +53,8 @@ services:
   otherdb:
     image: postgres:16
     container_name: external-postgres
+    ports:
+      - "5433:5432"
     environment:
       POSTGRES_DB: urbreath_dev
       POSTGRES_USER: external_user
@@ -73,7 +75,7 @@ services:
     restart: always
 
   embeddedsuperset:
-    build: ./embeddedsuperset  
+    build: ./urbreath-ds-embedded  
     container_name: embeddedsuperset
     environment:
       - REACT_APP_SUPERSET_URL=${REACT_APP_SUPERSET_URL}
