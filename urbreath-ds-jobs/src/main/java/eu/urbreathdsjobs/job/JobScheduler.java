@@ -43,17 +43,17 @@ public class JobScheduler {
         this.jobExplorer = jobExplorer;
     }
 
-    @Scheduled(cron = "0 0/10 * * * *")
+    @Scheduled(cron = "0/30 * * * * *")
     public void runTrafficJob() throws Exception {
         runJob(trafficJob, trafficLock, 1L);
     }
 
-    @Scheduled(cron = "0 0/2 * * * *")
+    @Scheduled(cron = "0/45 * * * * *")
     public void runTemperatureImportJob() throws Exception {
         runJob(temperatureImportJob, temperatureLock, 2L);
     }
     
-    @Scheduled(cron = "0 0/20 * * * *")
+    @Scheduled(cron = "0/30 * * * * *")
     public void runPrecipitationImportJob() throws Exception {
         runJob(precipitationImportJob, temperatureLock, 3L);
     }
