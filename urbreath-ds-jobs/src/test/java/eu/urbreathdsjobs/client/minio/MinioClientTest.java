@@ -19,8 +19,6 @@ import static org.junit.jupiter.api.Assertions.*;
 class MinioClientTest {
 
     private final String ENDPOINT = "https://minio-api-dev.urbreath.tech/";
-    private final String ACCESS_KEY = "Municipia";
-    private final String SECRET_KEY = "zS3fx4zeECPuc4K";
 
     private final String BUCKET = "urbreath-public-repo";
 
@@ -30,7 +28,7 @@ class MinioClientTest {
                 .region(Region.US_EAST_1)
                 .credentialsProvider(
                         StaticCredentialsProvider.create(
-                                AwsBasicCredentials.create(ACCESS_KEY, SECRET_KEY)
+                                AwsBasicCredentials.create(System.getenv().get("ACCESS_KEY"), System.getenv().get("SECRET_KEY"))
                         )
                 )
                 .forcePathStyle(true) // fondamentale per MinIO
@@ -42,6 +40,8 @@ class MinioClientTest {
      */
     @Test
     void testBucketExists() {
+    	
+    	
 
         S3Client client = buildClient();
 

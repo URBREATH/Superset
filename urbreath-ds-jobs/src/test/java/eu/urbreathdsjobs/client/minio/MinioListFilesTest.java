@@ -1,7 +1,5 @@
 package eu.urbreathdsjobs.client.minio;
 
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
@@ -12,15 +10,12 @@ import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
-import software.amazon.awssdk.services.s3.model.ListBucketsResponse;
 import software.amazon.awssdk.services.s3.model.ListObjectsV2Request;
 import software.amazon.awssdk.services.s3.model.ListObjectsV2Response;
 
 public class MinioListFilesTest {
 
     private final String ENDPOINT = "https://minio-api-dev.urbreath.tech/";
-    private final String ACCESS_KEY = "Municipia";
-    private final String SECRET_KEY = "zS3fx4zeECPuc4K";
 
     private final String BUCKET = "urbreath-public-repo";
 
@@ -30,7 +25,7 @@ public class MinioListFilesTest {
                 .region(Region.US_EAST_1)
                 .credentialsProvider(
                         StaticCredentialsProvider.create(
-                                AwsBasicCredentials.create(ACCESS_KEY, SECRET_KEY)
+                                AwsBasicCredentials.create(System.getenv().get("ACCESS_KEY"), System.getenv().get("SECRET_KEY"))
                         )
                 )
                 .forcePathStyle(true) // fondamentale per MinIO
