@@ -1,8 +1,8 @@
 spring:
   datasource:
     url: jdbc:postgresql://127.0.1.1:5433/urbreath_dev
-    username: ENC(XHg8ccaWwUt/U+oyHz0Bhfm8XGdl2eFAkXn3fS19M8B7rEN+zw/1Twda38LnmZbQ)
-    password: ENC(9nnc1qyTdEIcn7H2ifwzdegpa59v+xk/2di0FRgUw04l8mH4kq1iUEsxjC7SObcc)
+    username: ENC(a7i6s+RMohdZwr8FP6x+JHgbEDlwg/+m/NSvWDmKhBOHhKpjH9V+lTNHqS1HRjuc)
+    password: ENC(1CyCGXbJC1qVCSWJAN++dQiaunx7SKzmr+QU+R2VzGJqcgvNCjrIRSNt0EpHlvuR)
 
 
   batch:
@@ -14,5 +14,5 @@ spring:
   
 minio:
    endpoint: https://minio-api-dev.urbreath.tech/
-   access-key: ENC(X1kGhrV9p8auwyr2FYmo4CnVG3bqVOCAd+MpGdRxv1CjHQ44B2KA+NQ72XLFz7WN)
-   secret-key: ENC(ljzGnSiPhDa53RLIDqr9/svz8s9jHvF9B+ZDTj722s3m59kRN8vUY4rjo8dl+UuU)
+   access-key: ENC(kaas+FptqF3ldcOhOl67cevgG6XvkvELSr1GUXkY5FpQQONV/KkmINdGsyIoj7XU)
+   secret-key: ENC(gAPJR5i+7GDATUjwCN8ChkfcVjptAtT0jjoMiKyUQ/meS/pOYCD+dYUZ+ZpFMNn6)
