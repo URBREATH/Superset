@@ -28,7 +28,7 @@ public class MinioListFilesTest {
                                 AwsBasicCredentials.create(System.getenv().get("ACCESS_KEY"), System.getenv().get("SECRET_KEY"))
                         )
                 )
-                .forcePathStyle(true) // fondamentale per MinIO
+                .forcePathStyle(true) 
                 .build();
     }
 
@@ -42,6 +42,20 @@ public class MinioListFilesTest {
 
         listAllFiles(client, BUCKET, "Leuven/Mobility/KPIs").stream().filter(x -> x.contains("raw_data")).forEach(System.out::println);
     }
+    
+    
+    void testGenerateProjectionInsertBatchTask() {
+    	// TODO
+    	/*
+INSERT INTO public.batch_job_task_queue (id_batch, json_param, status, date_ins, date_mod, note) 
+VALUES( 1, '{"items": [{"key": "bucket", "value": "urbreath-public-repo", "type": "STRING"}, {"key": "MEASURE_TYPE", "value": "PROJECTION", "type": "STRING"}, {"key": "PARAM_ID", "value": "9996", "type": "NUMBER"}, {"key": "PARAM_ID", "value": "9996", "type": "NUMBER"},{"key": "SENSOR_ID", "value": "1", "type": "NUMBER"},{"key": "SOURCE", "value": "ssp126", "type": "MPI-ESM1-2-HR"},
+{"key": "objectKey", "value": "Cluj-Napoca/Climate Information/Projections/Temperature_corrected/02_MPI-ESM1-2-HR/ssp126/Temperature-corrected_MPI-ESM1-2-HR_ssp126_15120099999.txt", "type": "STRING"}]}'::json
+, 0, now(), null, NULL);
+    	
+    	*/
+    }
+
+
     
     
     public List<String> listAllFiles(S3Client s3Client, String bucket, String prefix) {
