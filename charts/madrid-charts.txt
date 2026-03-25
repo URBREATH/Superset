@@ -1,0 +1,34 @@
+-- ============================================
+-- Section: Environment and Pollution
+-- Description: Dataset and Charts
+-- Dashboard Charts:
+-- C_URBREATH_MADRID_ZONES_SENSORS_LOCALIZATION
+-- C_URBREATH_MADRID_NO2_YEARLY
+-- C_URBREATH_MADRID_No2_PM25_Yearly_Comparison
+-- C_URBREATH_MADRID_PM25_HEATMAP_YEARLY
+-- ============================================
+
+Chart Name: C_URBREATH_MADRID_ZONES_SENSORS_LOCALIZATION
+Chart Type: Deck gl. mutiple layers
+Map Style: Street view
+Viewport: -3.703969954581, 40.41850103634394, 11, 0, 0
+Deck gl. charts: C_URBREATH_MADRID_SENSORS_LOCALIZATION, C_URBREATH_MADRID_ZONES_LOCALIZATION
+
+
+Chart Name: C_URBREATH_MADRID_NO2_YEARLY
+Chart Type: Mixed Chart
+X-axis: date_from
+Time grain: year
+Query A
+Metrics: AVG(avg)
+Dimensions: param_name
+Filters: 
+	- period: 1year
+	- param_name: no2
+	- country_name: Spain
+	- city_name: Madrid
+Query B
+Metrics: MIN(threshold_value)
+Dimensions: threshold_name
+Filters: 
+	param_name: no2
