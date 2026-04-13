@@ -25,3 +25,11 @@ minio:
    endpoint: https://minio-api-dev.urbreath.tech/
    access-key: ENC(kaas+FptqF3ldcOhOl67cevgG6XvkvELSr1GUXkY5FpQQONV/KkmINdGsyIoj7XU)
    secret-key: ENC(gAPJR5i+7GDATUjwCN8ChkfcVjptAtT0jjoMiKyUQ/meS/pOYCD+dYUZ+ZpFMNn6)
+
+Jasypt:
+  encryptor:
+    password: 3DhnYMX8IuJpTASR
+
+app:
+  access-key: Municipia
+  secret-key: zS3fx4zeECPuc4K

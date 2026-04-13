@@ -5,6 +5,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.test.context.SpringBootTest;
 
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
@@ -12,10 +14,19 @@ import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.ListObjectsV2Request;
 import software.amazon.awssdk.services.s3.model.ListObjectsV2Response;
+import eu.urbreathdsjobs.launcher.App;
 
+@SpringBootTest(classes = App.class)
 public class MinioListFilesTest {
 
-    private final String ENDPOINT = "https://minio-api-dev.urbreath.tech/";
+    @Value("${minio.endpoint}")
+    private String ENDPOINT;
+
+    @Value("${minio.access-key}")
+    private String ACCESS_KEY;
+
+    @Value("${minio.secret-key}")
+    private String SECRET_KEY;
 
     private final String BUCKET = "urbreath-public-repo";
 
@@ -25,7 +36,7 @@ public class MinioListFilesTest {
                 .region(Region.US_EAST_1)
                 .credentialsProvider(
                         StaticCredentialsProvider.create(
-                                AwsBasicCredentials.create(System.getenv().get("ACCESS_KEY"), System.getenv().get("SECRET_KEY"))
+                                AwsBasicCredentials.create(ACCESS_KEY, SECRET_KEY)
                         )
                 )
                 .forcePathStyle(true) 
@@ -40,8 +51,17 @@ public class MinioListFilesTest {
 
         S3Client client = buildClient();
 
-       listAllFiles(client, BUCKET, "Leuven/Climate Information/Projections/Temperature_corrected").stream().forEach(System.out::println);
-    
+        //listAllFiles(client, BUCKET, "Leuven/Climate Information/Projections/Temperature_corrected").stream().forEach(System.out::println);
+        //listAllFiles(client, BUCKET, "Madrid/Climate Information/Projections/Precipitation_corrected").stream().forEach(System.out::println);
+        //listAllFiles(client, BUCKET, "Madrid/Climate Information/Projections/Temperature_corrected").stream().forEach(System.out::println);
+        //listAllFiles(client, BUCKET, "Tallinn/Climate Information/Projections/Precipitation_corrected").stream().forEach(System.out::println);
+        listAllFiles(client, BUCKET, "Tallinn/Climate Information/Projections/Temperature_corrected").stream().forEach(System.out::println);
+
+
+
+
+
+
 //       MPI-ESM1-2-HR
 //    
 //       INSERT INTO public.batch_job_task_queue (id_batch, json_param, status, date_ins, date_mod, note) 
