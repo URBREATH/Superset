@@ -48,7 +48,7 @@ public class JobScheduler {
         runJob(trafficJob, trafficLock, 1L);
     }
 
-    @Scheduled(cron = "0/45 * * * * *")
+    @Scheduled(cron = "0/30 * * * * *")
     public void runTemperatureImportJob() throws Exception {
         runJob(temperatureImportJob, temperatureLock, 2L);
     }

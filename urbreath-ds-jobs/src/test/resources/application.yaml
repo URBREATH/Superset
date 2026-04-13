@@ -1,9 +1,18 @@
 spring:
   datasource:
-    url: jdbc:postgresql://127.0.1.1:5433/urbreath_dev
+    url: jdbc:postgresql://188.34.141.13:57708/urbreath_dev?reWriteBatchedInserts=true
     username: ENC(a7i6s+RMohdZwr8FP6x+JHgbEDlwg/+m/NSvWDmKhBOHhKpjH9V+lTNHqS1HRjuc)
     password: ENC(1CyCGXbJC1qVCSWJAN++dQiaunx7SKzmr+QU+R2VzGJqcgvNCjrIRSNt0EpHlvuR)
-
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 5
+      connection-timeout: 30000
+      max-lifetime: 540000          
+      keepalive-time: 30000        
+      validation-timeout: 5000
+      connection-test-query: SELECT 1
+      data-source-properties:
+       rewriteBatchedStatements: true
 
   batch:
     jdbc:

@@ -31,7 +31,7 @@ class TemperatureDataImportJobTest {
     void runRealJob() throws Exception {
 
         JobParameters params = new JobParametersBuilder()
-                .addString("fileName", "anagrafica.csv")
+//                .addString("fileName", "anagrafica.csv")
                 .addLong("batch.id", 2L)
                 .addLong("time", System.currentTimeMillis())
                 .toJobParameters();

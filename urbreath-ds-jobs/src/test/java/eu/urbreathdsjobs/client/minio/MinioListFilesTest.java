@@ -40,7 +40,22 @@ public class MinioListFilesTest {
 
         S3Client client = buildClient();
 
-        listAllFiles(client, BUCKET, "Leuven/Mobility/KPIs").stream().filter(x -> x.contains("raw_data")).forEach(System.out::println);
+       listAllFiles(client, BUCKET, "Leuven/Climate Information/Projections/Temperature_corrected").stream().forEach(System.out::println);
+    
+//       MPI-ESM1-2-HR
+//    
+//       INSERT INTO public.batch_job_task_queue (id_batch, json_param, status, date_ins, date_mod, note) 
+//       VALUES( 2, '{"items": [
+//    		   {"key": "bucket", "value": "urbreath-public-repo", "type": "STRING"}, 
+//    		   {"key": "MEASURE_TYPE", "value": "PROJECTION", "type": "STRING"}, 
+//    		   {"key": "PARAM_ID", "value": "9996", "type": "NUMBER"},
+//    		   {"key": "SENSOR_ID", "value": "9900020", "type": "NUMBER"},
+//    		   {"key": "SCENARIO", "value": "ssp126", "type": "STRING"},
+//    		   {"key": "SOURCE", "value": "MPI-ESM1-2-HR", "type": "STRING"},
+//               {"key": "objectKey", "value": "Leuven/Climate Information/Projections/Temperature_corrected/02_MPI-ESM1-2-HR/ssp126/Temperature-corrected_MPI-ESM1-2-HR_ssp126_64510.txt", "type": "STRING"}
+//    		   ]}'::json
+//       , 0, now(), null, NULL);
+//      
     }
     
     

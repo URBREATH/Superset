@@ -65,7 +65,8 @@ public class TemperatureCsvReader  {
         FlatFileItemReader<TemperatureCsvRow> reader = new FlatFileItemReader<>();
 
         reader.setResource(new InputStreamResource(inputStream));
-        reader.setLinesToSkip(1);
+
+        reader.setLinesToSkip(0);
         reader.setLineMapper((line, lineNumber) -> {
             String[] fields = line.split("\t");
             TemperatureCsvRow row = new TemperatureCsvRow();
@@ -88,7 +89,8 @@ public class TemperatureCsvReader  {
             return row;
         });
 
- 
+        int currentItemCount = reader.getCurrentItemCount();
+
 
         return reader;
     }

@@ -45,6 +45,10 @@ public class JobStatusListener implements JobExecutionListener {
                     date_mod = now()
                 WHERE id = ?
             """, status, sb.toString(), taskId);
+            
+            System.out.println("Task ID: " + taskId);
+            System.out.println("Status Batch: " + status);
+            System.out.println("Esito Batch: " + sb.toString());
     	}
     	
 
