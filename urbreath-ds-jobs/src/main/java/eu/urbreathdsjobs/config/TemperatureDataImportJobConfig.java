@@ -1,5 +1,7 @@
 package eu.urbreathdsjobs.config;
 
+import java.time.DateTimeException;
+
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.Step;
 import org.springframework.batch.core.configuration.annotation.EnableBatchProcessing;
@@ -65,6 +67,9 @@ public class TemperatureDataImportJobConfig {
 				.<TemperatureCsvRow,Measurement>chunk(1000, transactionManager)
 				.reader(csvTemperatureReader)
 				.processor(temperatureProcessor)
+				.faultTolerant()
+		        .skip(DateTimeException.class) 
+		        .skipLimit(1000)       
 				.writer(measurementItemWriter)
 				.build();
 	}
