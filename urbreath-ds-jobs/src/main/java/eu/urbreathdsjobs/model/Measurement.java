@@ -1,7 +1,7 @@
 package eu.urbreathdsjobs.model;
 
 import java.time.LocalDateTime;
-import java.util.List;
+import java.util.Map;
 
 import lombok.Data;
 @Data
@@ -23,7 +23,8 @@ public class Measurement {
     private Double avg;
     private Double sd;
     private Double val;
-    private List<MeasurementAttribute> attributes;
+    Map<String, Object> metadata;
+
     
 
     public Measurement() {}
