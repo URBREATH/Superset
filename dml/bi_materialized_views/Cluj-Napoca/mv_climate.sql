@@ -5,7 +5,7 @@ CREATE MATERIALIZED VIEW mv_bi_clujnapoca_daily_avg_precipitation_projection AS
     date_trunc('day', date_from)::date as giorno,
     m.metadata->>'MEASURE_SIMULATION_COD_SCENARIO' as measure_cod_scenario,
     m.metadata->>'MEASURE_SIMULATION_SOURCE' as measure_projection_model,
-    avg(m.val) as val_giorno
+    avg(m.max) as val_giorno
   from measurement m
   join sensor s on s.id_sensor = m.id_sensor
   join location l on s.id_location = l.id_location
