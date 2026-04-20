@@ -16,6 +16,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 		"eu.urbreathdsjobs.dto",
 		"eu.urbreathdsjobs.job",
 		"eu.urbreathdsjobs.client.minio",
+		"eu.urbreathdsjobs.client.wms",
 		"eu.urbreathdsjobs.writer"})
 public class App {
 

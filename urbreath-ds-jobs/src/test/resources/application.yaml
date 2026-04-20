@@ -7,12 +7,12 @@ spring:
       maximum-pool-size: 10
       minimum-idle: 5
       connection-timeout: 30000
-      max-lifetime: 540000          
-      keepalive-time: 30000        
+      max-lifetime: 540000
+      keepalive-time: 30000
       validation-timeout: 5000
       connection-test-query: SELECT 1
       data-source-properties:
-       rewriteBatchedStatements: true
+        rewriteBatchedStatements: true
 
   batch:
     jdbc:
@@ -20,11 +20,11 @@ spring:
     job:
       enabled: false
 
-  
 minio:
-   endpoint: https://minio-api-dev.urbreath.tech/
-   access-key: ENC(kaas+FptqF3ldcOhOl67cevgG6XvkvELSr1GUXkY5FpQQONV/KkmINdGsyIoj7XU)
-   secret-key: ENC(gAPJR5i+7GDATUjwCN8ChkfcVjptAtT0jjoMiKyUQ/meS/pOYCD+dYUZ+ZpFMNn6)
+  endpoint: https://minio-api-dev.urbreath.tech/
+  access-key: ENC(kaas+FptqF3ldcOhOl67cevgG6XvkvELSr1GUXkY5FpQQONV/KkmINdGsyIoj7XU)
+  secret-key: ENC(gAPJR5i+7GDATUjwCN8ChkfcVjptAtT0jjoMiKyUQ/meS/pOYCD+dYUZ+ZpFMNn6)
+
 
 Jasypt:
   encryptor:
@@ -33,3 +33,45 @@ Jasypt:
 app:
   access-key: Municipia
   secret-key: zS3fx4zeECPuc4K
+
+wms:
+  base-url: https://urbreath.simena.red/wms/wms/
+  cities:
+    MADRID:
+      bbox: '-413371.4489662349%2C4916429.659302536%2C-412148.4565136721%2C4917652.651755099'
+      timezone: Europe%2FMadrid
+      i: 304
+      j: 135
+    LEUVEN:
+      bbox: '525886.7546020113%2C6599267.274028977%2C528332.739507137%2C6601713.258934103'
+      timezone: Europe%2FBrussels
+      i: 304
+      j: 135
+    CLUJ:
+      bbox: '2622095.8182946853%2C5899715.591163045%2C2631879.757915188%2C5909499.530783547'
+      timezone: Europe%2FBucharest
+      i: 69
+      j: 143
+    TALLIN:
+      bbox: '2759070.972981721%2C8267428.979324663%2C2768854.912602224%2C8277212.918945165'
+      timezone: Europe%2FTallin
+      i: 278
+      j: 364
+
+  call-types:
+    mintemperature:
+      layer: FIC_SAMPLE_PROB_TMIN_R00R12_URB
+      key: FIC_THRESHOLD_TMIN_URB
+      measures: [-5, 0, 5, 10]
+    maxtemperature:
+      layer: FIC_SAMPLE_PROB_TMAX_R00R12_URB
+      key: FIC_THRESHOLD_TMAX_URB
+      measures: [20, 25, 30, 35, 40]
+    precipitation:
+      layer: FIC_SAMPLE_PROB_PRECIPITATION_24H_R00R12_URB
+      key: FIC_THRESHOLD_PRECIPITATION_24H_URB
+      measures: [0, 5, 10, 20, 30, 50]
+    wind:
+      layer: FIC_SAMPLE_PROB_GUSTMAX_R00R12_URB
+      key: FIC_THRESHOLD_GUSTMAX_URB
+      measures: [10, 20, 30, 50]

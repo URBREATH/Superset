@@ -120,6 +120,7 @@
 				<artifactId>spring-boot-maven-plugin</artifactId>
 				<configuration>
 					<mainClass> eu.urbreathdsjobs.launcher.App </mainClass>
+					<jvmArguments>-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005</jvmArguments>
 				</configuration>
 			</plugin> <!--
 			Compiler Java 21 -->
