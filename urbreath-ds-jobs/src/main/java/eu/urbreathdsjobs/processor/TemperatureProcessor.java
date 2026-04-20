@@ -1,8 +1,7 @@
 package eu.urbreathdsjobs.processor;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Map;
 
 import org.springframework.batch.core.StepExecution;
 import org.springframework.batch.core.StepExecutionListener;
@@ -14,7 +13,6 @@ import eu.urbreathdsjobs.common.MeasurementAttributeEnum;
 import eu.urbreathdsjobs.dto.TaskJson;
 import eu.urbreathdsjobs.dto.TaskJsonItem;
 import eu.urbreathdsjobs.model.Measurement;
-import eu.urbreathdsjobs.model.MeasurementAttribute;
 import eu.urbreathdsjobs.model.TemperatureCsvRow;
 
 @Component
@@ -63,33 +61,29 @@ public class TemperatureProcessor  implements ItemProcessor<TemperatureCsvRow, M
 			avgTermicTemp = (double) (item.getTmin() + ((item.getTmax() - item.getTmin()) / Math.PI));
 		}
 		
-		
-		
-		
-		List<MeasurementAttribute> attributes = new ArrayList<>();
+		Map<String, Object> metadata = new java.util.HashMap<>();
 		
 		if (Constants.MEASUREMENT_TYPE_PROJECTION.equals(measurementTypeItem.getValue())) {
 			TaskJsonItem scenarioItem = taskJson.getItems().stream().filter(x -> x.getKey().equals(Constants.MEASUREMENT_COD_SCENARIO)).findFirst().get();
 			TaskJsonItem simulationSourceItem = taskJson.getItems().stream().filter(x -> x.getKey().equals(Constants.MEASUREMENT_SOURCE)).findFirst().get();
 
-			
-			attributes.add(createMeasurementAttribute(MeasurementAttributeEnum.MEASURE_TYPE,Constants.MEASUREMENT_TYPE_PROJECTION));
-			attributes.add(createMeasurementAttribute(MeasurementAttributeEnum.MEASURE_SIMULATION_COD_SCENARIO, scenarioItem.getValue()));
-			attributes.add(createMeasurementAttribute(MeasurementAttributeEnum.MEASURE_SIMULATION_SOURCE, simulationSourceItem.getValue()));
+			metadata.put(MeasurementAttributeEnum.MEASURE_TYPE.name(), Constants.MEASUREMENT_TYPE_PROJECTION);
+			metadata.put(MeasurementAttributeEnum.MEASURE_SIMULATION_COD_SCENARIO.name(), scenarioItem.getValue());
+			metadata.put(MeasurementAttributeEnum.MEASURE_SIMULATION_SOURCE.name(), simulationSourceItem.getValue());
 
 		} else {
-			attributes.add(createMeasurementAttribute(MeasurementAttributeEnum.MEASURE_TYPE,Constants.MEASUREMENT_TYPE_ACTUAL));
+			metadata.put(MeasurementAttributeEnum.MEASURE_TYPE.name(), Constants.MEASUREMENT_TYPE_ACTUAL);
 			
 			if (avgTermicTemp != null) {
-				attributes.add(createMeasurementAttribute(MeasurementAttributeEnum.TERMIC_AVG, String.valueOf(avgTermicTemp)));
+				metadata.put(MeasurementAttributeEnum.TERMIC_AVG.name(), avgTermicTemp);
 			}
 
 		}
 		
-		attributes.add(createMeasurementAttribute(MeasurementAttributeEnum.FILE_PATH, objectKeyItem.getValue()));
-		attributes.add(createMeasurementAttribute(MeasurementAttributeEnum.ID_BATCH, String.valueOf(taskId)));
+		metadata.put(MeasurementAttributeEnum.FILE_PATH.name(), objectKeyItem.getValue());
+		metadata.put(MeasurementAttributeEnum.ID_BATCH.name(), taskId);
 		
-		measurement.setAttributes(attributes);
+		measurement.setMetadata(metadata);
 		
 		return measurement;
 	}
@@ -99,21 +93,7 @@ public class TemperatureProcessor  implements ItemProcessor<TemperatureCsvRow, M
         this.stepExecution = stepExecution;
     }
     
-    private MeasurementAttribute createMeasurementAttribute(MeasurementAttributeEnum attributeEnum, String value) {
-		MeasurementAttribute attribute = new MeasurementAttribute();
-		attribute.setIdAttribute(attributeEnum.getIdAttribute());
-		
-		if (attributeEnum.getValueType().equals("NUMBER")) {
-			attribute.setAttrValueNumber(Double.valueOf(value));
-			attribute.setAttrValueString(null);
-		} else {
-			attribute.setAttrValueString(value);
-			attribute.setAttrValueNumber(null);
-		}
-		
-		
-		return attribute;
-	}
+
     
 
 
