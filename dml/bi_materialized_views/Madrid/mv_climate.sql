@@ -54,3 +54,64 @@ group by
   anno
 order by periodo, scenario, anno
 ;
+
+
+ CREATE MATERIALIZED VIEW mv_bi_madrid_daily_temperature_actual AS
+ select
+    date_part('year', date_from) as anno,
+    to_char(date_from, 'MM') || '-' || trim(to_char(date_from, 'TMMonth')) as mese,
+    date_trunc('day', date_from)::date as giorno,
+    m.min as min_temperature,
+    m.max as max_temperature,
+    m.avg as avg_temperature
+  from measurement m
+  join sensor s on s.id_sensor = m.id_sensor
+  join location l on s.id_location = l.id_location
+  join city c on l.id_city = c.id_city
+  join parameter p on s.id_param = p.id_param
+  where
+    p."name" = 'air_temperature'
+    and c."name" = 'Madrid'
+    and m.metadata->>'MEASURE_TYPE' ='ACTUAL';
+    
+    
+    
+CREATE MATERIALIZED VIEW mv_bi_madrid_daily_avg_temperature_actual AS
+select 
+date_part('year', giorno) as year,
+to_char(giorno, 'MM') || '-' || trim(to_char(giorno, 'TMMonth')) as month,
+date_trunc('day', giorno)::date as date,
+avg(avg_temperature) as avg_temperature
+from mv_bi_madrid_daily_temperature_actual bi 
+group by     
+date_part('year', giorno),
+to_char(giorno, 'MM') || '-' || trim(to_char(giorno, 'TMMonth')),
+date_trunc('day', giorno)::date;
+
+CREATE MATERIALIZED VIEW mv_bi_madrid_daily_precipitation_actual AS
+ select
+    date_part('year', date_from) as anno,
+    to_char(date_from, 'MM') || '-' || trim(to_char(date_from, 'TMMonth')) as mese,
+    date_trunc('day', date_from)::date as giorno,
+	m.val
+  from measurement m
+  join sensor s on s.id_sensor = m.id_sensor
+  join location l on s.id_location = l.id_location
+  join city c on l.id_city = c.id_city
+  join parameter p on s.id_param = p.id_param
+  where
+    p."name" = 'precipitation'
+    and c."name" = 'Madrid'
+    and m.metadata->>'MEASURE_TYPE' ='ACTUAL';
+
+CREATE MATERIALIZED VIEW mv_bi_madrid_daily_avg_precipitation_actual AS
+select 
+date_part('year', giorno) as year,
+to_char(giorno, 'MM') || '-' || trim(to_char(giorno, 'TMMonth')) as month,
+date_trunc('day', giorno)::date as date,
+avg(val) as avg_precipitation
+from mv_bi_madrid_daily_precipitation_actual bi 
+group by     
+date_part('year', giorno),
+to_char(giorno, 'MM') || '-' || trim(to_char(giorno, 'TMMonth')),
+date_trunc('day', giorno)::date;
