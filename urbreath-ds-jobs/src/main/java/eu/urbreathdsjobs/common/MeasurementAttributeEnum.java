@@ -9,6 +9,7 @@ public enum MeasurementAttributeEnum {
 	MEASURE_HORIZON( "", "NUMBER"),
 	MEASURE_THRESHOLD("", "NUMBER"),
 	FILE_PATH("Path del file da cui è stata estratta la misura", "STRING"),
+	HOR("", "NUMBER"),
 	ID_BATCH("Identificativo dell'istanza batch che ha eseguito il caricamento", "NUMBER");
 
 

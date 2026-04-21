@@ -35,6 +35,7 @@ app:
   secret-key: zS3fx4zeECPuc4K
 
 wms:
+  id-param: 19862
   base-url: https://urbreath.simena.red/wms/wms/
   cities:
     MADRID:

@@ -16,6 +16,7 @@ import java.util.Map;
 @Data
 public class WmsProperties {
     private String baseUrl;
+    private Long idParam;
     private Map<String, CityConfig> cities = new HashMap<>();
     private Map<String, CallTypeConfig> callTypes = new HashMap<>();
     private Map<String, Map<String, String>> sensors = new HashMap<>();
@@ -35,4 +36,3 @@ public class WmsProperties {
         private List<Integer> measures;
     }
 }
-
