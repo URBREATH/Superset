@@ -18,6 +18,7 @@ public class WmsProperties {
     private String baseUrl;
     private Map<String, CityConfig> cities = new HashMap<>();
     private Map<String, CallTypeConfig> callTypes = new HashMap<>();
+    private Map<String, Map<String, String>> sensors = new HashMap<>();
 
     @Data
     public static class CityConfig {
