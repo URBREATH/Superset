@@ -45,7 +45,10 @@ public class JobWSMScheduler {
         }
     }
 
-    @Scheduled(cron = "${app.scheduler.wms.cron:0/30 * * * * *}")
+    @Scheduled(
+            initialDelayString = "${app.scheduler.wms.initial-delay-ms:30000}",
+            fixedRateString = "${app.scheduler.wms.fixed-rate-ms:120000}"
+    )
     public void runWmsImportJob() throws Exception {
         if (!wmsLock.tryLock()) {
             log.warn("{} already running in scheduler lock, skipping...", wmsImportJob.getName());
