@@ -68,7 +68,7 @@ public class PrecipitationProcessor  implements ItemProcessor<PrecipitationCsvRo
 		}
 		
 		metadata.put(MeasurementAttributeEnum.FILE_PATH.name(), objectKeyItem.getValue());
-		metadata.put(MeasurementAttributeEnum.ID_BATCH.name(), String.valueOf(taskId));
+		metadata.put(MeasurementAttributeEnum.ID_BATCH.name(), taskId);
 		
 		measurement.setMetadata(metadata);
 		
