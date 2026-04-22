@@ -26,7 +26,7 @@ VALUES (2, '{"items":[{"key":"bucket","value":"urbreath-public-repo","type":"STR
 {"key":"objectKey","value":"Cluj-Napoca/Climate Information/Observations/Temperature/15120599999_temperature.txt","type":"STRING"},
 {"key":"MEASURE_TYPE","value":"ACTUAL","type":"STRING"},
 {"key":"PARAM_ID","value":"9996","type":"INTEGER"},
-{"key":"SENSOR_ID","value":"9900007","type":"INTEGER"},
+{"key":"SENSOR_ID","value":"9900002","type":"INTEGER"},
 {"key":"PERIOD","value":"1day","type":"STRING"}]
 }', 0, now(), null);
 
