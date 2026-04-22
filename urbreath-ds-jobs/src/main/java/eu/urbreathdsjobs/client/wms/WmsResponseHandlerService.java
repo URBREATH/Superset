@@ -119,14 +119,12 @@ public class WmsResponseHandlerService {
 
 
         log.info(
-                "Processed WMS response for city={}, callType={}, measure={}, key={}, sensor={}, layers={}, features={}",
+                "Processed WMS response for city={}, callType={}, measure={}, key={}, sensor={}, layers={}",
                 city,
                 request != null ? request.getCallType() : null,
                 request != null ? request.getMeasure() : null,
                 key,
                 sensor,
-                layerCount,
-                featureCount
-        );
+                layerCount);
     }
 }
