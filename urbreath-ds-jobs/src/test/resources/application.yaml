@@ -35,6 +35,7 @@ app:
   secret-key: zS3fx4zeECPuc4K
 
 wms:
+  id-param: 19862
   base-url: https://urbreath.simena.red/wms/wms/
   cities:
     MADRID:
@@ -71,3 +72,54 @@ wms:
     wind:
       layer: FIC_SAMPLE_PROB_GUSTMAX_R00R12_URB
       key: FIC_THRESHOLD_GUSTMAX_URB
+
+  sensors:
+    MADRID:
+      FIC_THRESHOLD_TMIN_URB: MADRID_TMIN_SENSOR
+      FIC_THRESHOLD_TMAX_URB: MADRID_TMAX_SENSOR
+      FIC_THRESHOLD_PRECIPITATION_24H_URB: MADRID_PRECIP_SENSOR
+      FIC_THRESHOLD_GUSTMAX_URB: MADRID_WIND_SENSOR
+    LEUVEN:
+      FIC_THRESHOLD_TMIN_URB: LEUVEN_TMIN_SENSOR
+      FIC_THRESHOLD_TMAX_URB: LEUVEN_TMAX_SENSOR
+      FIC_THRESHOLD_PRECIPITATION_24H_URB: LEUVEN_PRECIP_SENSOR
+      FIC_THRESHOLD_GUSTMAX_URB: LEUVEN_WIND_SENSOR
+    CLUJ:
+      FIC_THRESHOLD_TMIN_URB: CLUJ_TMIN_SENSOR
+      FIC_THRESHOLD_TMAX_URB: CLUJ_TMAX_SENSOR
+      FIC_THRESHOLD_PRECIPITATION_24H_URB: CLUJ_PRECIP_SENSOR
+      FIC_THRESHOLD_GUSTMAX_URB: CLUJ_WIND_SENSOR
+    TALLIN:
+      FIC_THRESHOLD_TMIN_URB: TALLIN_TMIN_SENSOR
+      FIC_THRESHOLD_TMAX_URB: TALLIN_TMAX_SENSOR
+      FIC_THRESHOLD_PRECIPITATION_24H_URB: TALLIN_PRECIP_SENSOR
+      FIC_THRESHOLD_GUSTMAX_URB: TALLIN_WIND_SENSOR
+
+frost:
+  enabled: false
+  base-url: https://frost-dev.urbreath.tech/FROST-Server/v1.1
+  id-param: 19862
+  page-size: 500
+  order-by: phenomenonTime desc
+  expand: Datastream($expand=Thing,Sensor,ObservedProperty)
+  datastreams: []
+  # Esempio:
+  # datastreams:
+  #   - datastream-id: 1
+  #     sensor-id: 1001
+  #     city: MADRID
+  #     description: Temperatura centralina Madrid
+  #     observed-property: temperature
+  #     measure-type: ACTUAL
+  #     source: FROST
+  #     filter: result ne null
+
+logging:
+  level:
+    eu.urbreathdsjobs.job.JobWSMScheduler: INFO
+    eu.urbreathdsjobs.job.WmsImportTasklet: INFO
+    eu.urbreathdsjobs.client.wms.WmsHttpClientService: INFO
+    eu.urbreathdsjobs.client.wms.WmsResponseHandlerService: INFO
+    eu.urbreathdsjobs.client.frost.FrostClientService: INFO
+    eu.urbreathdsjobs.client.frost.FrostResponseHandlerService: INFO
+    eu.urbreathdsjobs.job.FrostImportTasklet: INFO
