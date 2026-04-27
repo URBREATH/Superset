@@ -17,10 +17,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import eu.urbreathdsjobs.model.Measurement;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @Component
 @RequiredArgsConstructor
 @Transactional
+@Slf4j
 public class MeasurementWriter implements ItemWriter<Measurement> {
 
     private final JdbcTemplate jdbcTemplate;
@@ -32,6 +34,29 @@ public class MeasurementWriter implements ItemWriter<Measurement> {
             (id_param, id_sensor, period, date_from, date_to, min, q02, q24, median, q75, q98, max, avg, sd, val, metadata)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """;
+
+    private static final String DELETE_BY_ID_PARAM = """
+            DELETE FROM public.measurement WHERE id_param = ?
+            """;
+
+    public void deleteByIdParam(Long idParam) {
+        int deleted = jdbcTemplate.update(DELETE_BY_ID_PARAM, idParam);
+        log.info("Deleted {} measurements for id_param={}", deleted, idParam);
+    }
+
+    private static final int CHUNK_SIZE = 500;
+
+    @Transactional
+    public void deleteAndWrite(Long idParam, List<Measurement> measurements) throws Exception {
+        deleteByIdParam(idParam);
+        int total = measurements.size();
+        for (int i = 0; i < total; i += CHUNK_SIZE) {
+            List<Measurement> chunk = measurements.subList(i, Math.min(i + CHUNK_SIZE, total));
+            write(new Chunk<>(chunk));
+            log.debug("Written chunk [{}-{}] of {}", i, i + chunk.size(), total);
+        }
+        log.info("deleteAndWrite completed for id_param={}, inserted={}", idParam, total);
+    }
 
     @Override
     public void write(Chunk<? extends Measurement> chunk) throws Exception {

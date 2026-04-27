@@ -26,12 +26,12 @@ public class WmsResponseHandlerService {
     private final WmsSensorRegistry wmsSensorRegistry;
     private final WmsProperties wmsProperties;
 
-    public void handle(WmsCallResult result) {
+    public List<Measurement> handle(WmsCallResult result) {
         Long configuredIdParam = wmsProperties.getIdParam();
 
         if (result == null || result.getResponse() == null) {
             log.warn("WMS response is null, skipping processing");
-            return;
+            return new ArrayList<>();
         }
 
         WmsResponse response = result.getResponse();
@@ -58,7 +58,7 @@ public class WmsResponseHandlerService {
             for (WmsLayerCollection layer : layers) {
                 if (layer.getFeatures() == null) {
                     log.warn("layer.getFeatures() == null, skipping processing");
-                    return;
+                    continue;
                 }
 
                 for (WmsFeature feature : layer.getFeatures()) {
@@ -124,5 +124,7 @@ public class WmsResponseHandlerService {
                 key,
                 sensor,
                 layerCount);
+
+        return listMeasurament;
     }
 }
