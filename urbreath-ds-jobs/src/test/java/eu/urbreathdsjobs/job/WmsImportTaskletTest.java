@@ -33,8 +33,8 @@ class WmsImportTaskletTest {
 
         WmsImportTasklet tasklet = new WmsImportTasklet(wmsUrlService, wmsHttpClientService, handlerService);
 
-        WmsRequest request1 = WmsRequest.builder().city(City.MADRID).callType("wind").measure(20).url("http://example/1").build();
-        WmsRequest request2 = WmsRequest.builder().city(City.LEUVEN).callType("precipitation").measure(10).url("http://example/2").build();
+        WmsRequest request1 = WmsRequest.builder().city(City.MADRID).callType("wind").url("http://example/1").build();
+        WmsRequest request2 = WmsRequest.builder().city(City.LEUVEN).callType("precipitation").url("http://example/2").build();
         when(wmsUrlService.generateUrlsForAllCities()).thenReturn(List.of(request1, request2));
 
         when(wmsHttpClientService.fetch(any(WmsRequest.class)))

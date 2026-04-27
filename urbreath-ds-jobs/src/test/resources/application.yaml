@@ -62,16 +62,12 @@ wms:
     mintemperature:
       layer: FIC_SAMPLE_PROB_TMIN_R00R12_URB
       key: FIC_THRESHOLD_TMIN_URB
-      measures: [-5, 0, 5, 10]
     maxtemperature:
       layer: FIC_SAMPLE_PROB_TMAX_R00R12_URB
       key: FIC_THRESHOLD_TMAX_URB
-      measures: [20, 25, 30, 35, 40]
     precipitation:
       layer: FIC_SAMPLE_PROB_PRECIPITATION_24H_R00R12_URB
       key: FIC_THRESHOLD_PRECIPITATION_24H_URB
-      measures: [0, 5, 10, 20, 30, 50]
     wind:
       layer: FIC_SAMPLE_PROB_GUSTMAX_R00R12_URB
       key: FIC_THRESHOLD_GUSTMAX_URB
-      measures: [10, 20, 30, 50]

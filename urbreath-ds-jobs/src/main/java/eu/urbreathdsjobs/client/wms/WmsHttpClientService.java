@@ -39,8 +39,8 @@ public class WmsHttpClientService {
             try {
                 results.add(fetch(request));
             } catch (RuntimeException ex) {
-                log.warn("WMS call failed for city={}, callType={}, measure={}. Cause: {}",
-                        request.getCity(), request.getCallType(), request.getMeasure(), ex.getMessage());
+                log.warn("WMS call failed for city={}, callType={}. Cause: {}",
+                        request.getCity(), request.getCallType(), ex.getMessage());
             }
         }
 

@@ -35,43 +35,31 @@ public class WmsUrlService {
         // Iterate through all call types
         for (String callTypeName : wmsProperties.getCallTypes().keySet()) {
             WmsProperties.CallTypeConfig callConfig = wmsProperties.getCallTypes().get(callTypeName);
-            List<Integer> measures = callConfig.getMeasures();
 
-            if (measures == null || measures.isEmpty()) {
-                log.warn("No measures configured for callType: {}", callTypeName);
-                continue;
-            }
+            String url = buildUrl(
+                    city,
+                    callTypeName,
+                    callConfig.getLayer(),
+                    cityConfig.getBbox(),
+                    cityConfig.getTimezone(),
+                    cityConfig.getI(),
+                    cityConfig.getJ()
+            );
 
-            // Generate a URL for each measure
-            for (Integer measure : measures) {
-                String url = buildUrl(
-                        city,
-                        callTypeName,
-                        callConfig.getLayer(),
-                        callConfig.getKey(),
-                        cityConfig.getBbox(),
-                        cityConfig.getTimezone(),
-                        cityConfig.getI(),
-                        cityConfig.getJ(),
-                        measure
-                );
+            WmsRequest request = WmsRequest.builder()
+                    .city(city)
+                    .callType(callTypeName)
+                    .url(url)
+                    .layer(callConfig.getLayer())
+                    .key(callConfig.getKey())
+                    .bbox(cityConfig.getBbox())
+                    .timezone(cityConfig.getTimezone())
+                    .i(cityConfig.getI())
+                    .j(cityConfig.getJ())
+                    .build();
 
-                WmsRequest request = WmsRequest.builder()
-                        .city(city)
-                        .callType(callTypeName)
-                        .measure(measure)
-                        .url(url)
-                        .layer(callConfig.getLayer())
-                        .key(callConfig.getKey())
-                        .bbox(cityConfig.getBbox())
-                        .timezone(cityConfig.getTimezone())
-                        .i(cityConfig.getI())
-                        .j(cityConfig.getJ())
-                        .build();
-
-                requests.add(request);
-                log.debug("Generated WMS URL for city: {}, callType: {}, measure: {}", city.getName(), callTypeName, measure);
-            }
+            requests.add(request);
+            log.debug("Generated WMS URL for city: {}, callType: {}", city.getName(), callTypeName);
         }
 
         return requests;
@@ -99,31 +87,27 @@ public class WmsUrlService {
      * @param city the city
      * @param callType the call type (mintemperature, maxtemperature, precipitation, wind)
      * @param layer the layer name
-     * @param key the threshold key
      * @param bbox the bounding box
      * @param timezone the timezone
-     * @param measure the measure value
      * @return the formatted WMS URL
      */
-    public String generateUrl(City city, String callType, String layer, String key, String bbox, String timezone, Integer i, Integer j, Integer measure) {
-        return buildUrl(city, callType, layer, key, bbox, timezone, i, j, measure);
+    public String generateUrl(City city, String callType, String layer, String bbox, String timezone, Integer i, Integer j) {
+        return buildUrl(city, callType, layer, bbox, timezone, i, j);
     }
 
     /**
      * Builds a WMS URL using the builder
      */
-    private String buildUrl(City city, String callType, String layer, String key, String bbox, String timezone, Integer i, Integer j, Integer measure) {
+    private String buildUrl(City city, String callType, String layer, String bbox, String timezone, Integer i, Integer j) {
         return WmsUrlBuilder.builder()
                 .baseUrl(wmsProperties.getBaseUrl())
                 .city(city)
                 .callType(callType)
                 .layer(layer)
-                .key(key)
                 .bbox(bbox)
                 .timezone(timezone)
                 .i(i)
                 .j(j)
-                .measure(measure)
                 .build()
                 .build();
     }

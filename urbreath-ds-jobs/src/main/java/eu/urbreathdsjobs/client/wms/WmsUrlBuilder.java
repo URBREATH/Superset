@@ -2,10 +2,6 @@ package eu.urbreathdsjobs.client.wms;
 
 import lombok.Builder;
 import lombok.Data;
-import org.springframework.stereotype.Component;
-
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * Builder for creating WMS request URLs
@@ -31,10 +27,8 @@ public class WmsUrlBuilder {
     private City city;
     private String callType;
     private String layer;
-    private String key;
     private String bbox;
     private String timezone;
-    private Integer measure;
     private Integer i;
     private Integer j;
 
@@ -54,7 +48,6 @@ public class WmsUrlBuilder {
         url.append("&QUERY_LAYERS=").append(layer);
         url.append("&LAYERS=").append(layer);
         url.append("&").append(HORIZON_PARAM);
-        url.append("&").append(key).append("=").append(measure);
         url.append("&__tz=").append(timezone);
         url.append("&").append(INFO_FORMAT_PARAM);
         url.append("&").append(I_PARAM).append(i);

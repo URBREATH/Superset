@@ -48,13 +48,21 @@ class WmsUrlServiceTest {
         WmsProperties.CallTypeConfig precipitation = new WmsProperties.CallTypeConfig();
         precipitation.setLayer("FIC_SAMPLE_PROB_PRECIPITATION_24H_R00R12_URB");
         precipitation.setKey("FIC_THRESHOLD_PRECIPITATION_24H_URB");
-        precipitation.setMeasures(List.of(0, 10, 50));
         callTypes.put("precipitation", precipitation);
+
+        WmsProperties.CallTypeConfig minTemperature = new WmsProperties.CallTypeConfig();
+        minTemperature.setLayer("FIC_SAMPLE_PROB_TMIN_R00R12_URB");
+        minTemperature.setKey("FIC_THRESHOLD_TMIN_URB");
+        callTypes.put("mintemperature", minTemperature);
+
+        WmsProperties.CallTypeConfig maxTemperature = new WmsProperties.CallTypeConfig();
+        maxTemperature.setLayer("FIC_SAMPLE_PROB_TMAX_R00R12_URB");
+        maxTemperature.setKey("FIC_THRESHOLD_TMAX_URB");
+        callTypes.put("maxtemperature", maxTemperature);
 
         WmsProperties.CallTypeConfig wind = new WmsProperties.CallTypeConfig();
         wind.setLayer("FIC_SAMPLE_PROB_GUSTMAX_R00R12_URB");
         wind.setKey("FIC_THRESHOLD_GUSTMAX_URB");
-        wind.setMeasures(List.of(20, 30));
         callTypes.put("wind", wind);
 
         wmsProperties.setCallTypes(callTypes);
@@ -69,7 +77,7 @@ class WmsUrlServiceTest {
         List<WmsRequest> urls = wmsUrlService.generateUrlsForCity(City.MADRID);
 
         assertNotNull(urls);
-        assertEquals(5, urls.size()); // precipitation (3) + wind (2)
+        assertEquals(4, urls.size()); // one URL per call type
 
         // Verify first URL
         WmsRequest firstUrl = urls.get(0);
@@ -85,12 +93,10 @@ class WmsUrlServiceTest {
                 City.MADRID,
                 "wind",
                 "FIC_SAMPLE_PROB_GUSTMAX_R00R12_URB",
-                "FIC_THRESHOLD_GUSTMAX_URB",
                 "-413371.4489662349%2C4916429.659302536%2C-412148.4565136721%2C4917652.651755099",
                 "Europe%2FMadrid",
                 101,
-                367,
-                50
+                367
         );
 
         assertNotNull(url);
@@ -98,7 +104,7 @@ class WmsUrlServiceTest {
         assertTrue(url.contains("SERVICE=WMS"));
         assertTrue(url.contains("VERSION=1.3.0"));
         assertTrue(url.contains("FIC_SAMPLE_PROB_GUSTMAX_R00R12_URB"));
-        assertTrue(url.contains("FIC_THRESHOLD_GUSTMAX_URB=50"));
+        assertFalse(url.contains("FIC_THRESHOLD_GUSTMAX_URB="));
         assertTrue(url.contains("BBOX="));
         assertTrue(url.contains("CRS=EPSG%3A3857"));
     }
@@ -110,12 +116,10 @@ class WmsUrlServiceTest {
                 City.MADRID,
                 "precipitation",
                 "FIC_SAMPLE_PROB_PRECIPITATION_24H_R00R12_URB",
-                "FIC_THRESHOLD_PRECIPITATION_24H_URB",
                 "-413371.4489662349%2C4916429.659302536%2C-412148.4565136721%2C4917652.651755099",
                 "Europe%2FMadrid",
                 101,
-                367,
-                20
+                367
         );
 
         assertTrue(url.contains("REQUEST=GetFeatureInfo"), "Missing REQUEST parameter");
@@ -129,28 +133,9 @@ class WmsUrlServiceTest {
         assertTrue(url.contains("WIDTH=512"), "Missing WIDTH parameter");
         assertTrue(url.contains("HEIGHT=512"), "Missing HEIGHT parameter");
         assertTrue(url.contains("CRS=EPSG%3A3857"), "Missing CRS parameter");
-        assertTrue(url.contains("FIC_THRESHOLD_PRECIPITATION_24H_URB=20"), "Missing dynamic threshold parameter");
+        assertFalse(url.contains("FIC_THRESHOLD_PRECIPITATION_24H_URB="), "Threshold parameter should not be present");
         assertTrue(url.contains("I=101"), "Missing I parameter");
         assertTrue(url.contains("J=367"), "Missing J parameter");
-    }
-
-    @Test
-    @DisplayName("Should use correct measure values in URLs")
-    void testMeasureValuesInUrl() {
-        List<WmsRequest> urls = wmsUrlService.generateUrlsForCity(City.MADRID);
-
-        // Check that all expected measure values are present
-        List<Integer> foundMeasures = urls.stream()
-                .map(WmsRequest::getMeasure)
-                .distinct()
-                .toList();
-
-        assertEquals(5, foundMeasures.size());
-        assertTrue(foundMeasures.contains(0));
-        assertTrue(foundMeasures.contains(10));
-        assertTrue(foundMeasures.contains(20));
-        assertTrue(foundMeasures.contains(30));
-        assertTrue(foundMeasures.contains(50));
     }
 
     @Test
@@ -168,7 +153,6 @@ class WmsUrlServiceTest {
 
         assertNotNull(request.getCity());
         assertNotNull(request.getCallType());
-        assertNotNull(request.getMeasure());
         assertNotNull(request.getUrl());
         assertNotNull(request.getLayer());
         assertNotNull(request.getKey());

@@ -63,19 +63,15 @@ wms:
     mintemperature:
       layer: FIC_SAMPLE_PROB_TMIN_R00R12_URB
       key: FIC_THRESHOLD_TMIN_URB
-      measures: [30, 25, 20, 10, 2, 1, 0, -1, -2, -3, -4, -5, -6, -7, -8, -9, -10, -11, -12]
     maxtemperature:
       layer: FIC_SAMPLE_PROB_TMAX_R00R12_URB
       key: FIC_THRESHOLD_TMAX_URB
-      measures: [0, 5, 10, 20, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44]
     precipitation:
       layer: FIC_SAMPLE_PROB_PRECIPITATION_24H_R00R12_URB
       key: FIC_THRESHOLD_PRECIPITATION_24H_URB
-      measures: [0, 1, 5, 10, 20, 40, 60, 80, 100, 120, 140, 160, 180, 200, 220, 240, 260, 280, 300, 320]
     wind:
       layer: FIC_SAMPLE_PROB_GUSTMAX_R00R12_URB
       key: FIC_THRESHOLD_GUSTMAX_URB
-      measures: [20, 40, 60, 80, 100, 120, 140, 160, 180]
 
   sensors:
     MADRID:

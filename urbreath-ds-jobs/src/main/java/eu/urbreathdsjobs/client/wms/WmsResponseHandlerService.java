@@ -44,10 +44,9 @@ public class WmsResponseHandlerService {
         }
 
         log.info(
-                "Starting Processing WMS response for city={}, callType={}, measure={}, key={}, sensor={}",
+                "Starting Processing WMS response for city={}, callType={}, key={}, sensor={}",
                 city,
                 request != null ? request.getCallType() : null,
-                request != null ? request.getMeasure() : null,
                 key,
                 sensor
         );
@@ -119,10 +118,9 @@ public class WmsResponseHandlerService {
 
 
         log.info(
-                "Processed WMS response for city={}, callType={}, measure={}, key={}, sensor={}, layers={}",
+                "Processed WMS response for city={}, callType={}, key={}, sensor={}, layers={}",
                 city,
                 request != null ? request.getCallType() : null,
-                request != null ? request.getMeasure() : null,
                 key,
                 sensor,
                 layerCount);

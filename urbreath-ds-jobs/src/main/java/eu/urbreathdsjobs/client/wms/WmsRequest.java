@@ -11,7 +11,6 @@ import lombok.Data;
 public class WmsRequest {
     private City city;
     private String callType;
-    private Integer measure;
     private String url;
     private String layer;
     private String key;

@@ -7,6 +7,7 @@ import eu.urbreathdsjobs.client.wms.WmsUrlService;
 import eu.urbreathdsjobs.launcher.App;
 import org.junit.jupiter.api.Test;
 import org.springframework.batch.core.explore.JobExplorer;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.test.mock.mockito.SpyBean;
@@ -29,17 +30,15 @@ import org.mockito.ArgumentCaptor;
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 class WmsImportJobTest {
 
-    @SpyBean
+    @Autowired
     private JobWSMScheduler jobWSMScheduler;
 
-    @SpyBean
+    @Autowired
     private WmsUrlService wmsUrlService;
 
-    @MockBean
+    @Autowired
     private WmsHttpClientService wmsHttpClientService;
 
-    @MockBean
-    private JobExplorer jobExplorer;
 
     @Test
     void schedulerShouldLaunchWmsImportJobAndFetchAllGeneratedRequests() throws Exception {
