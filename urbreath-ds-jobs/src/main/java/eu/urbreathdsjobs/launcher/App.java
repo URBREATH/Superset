@@ -7,17 +7,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 
 
 @EnableScheduling
-@SpringBootApplication(scanBasePackages = {
-		"eu.urbreathdsjobs.launcher", 
-		"eu.urbreathdsjobs.config", 
-		"eu.urbreathdsjobs.reader", 
-		"eu.urbreathdsjobs.processor",
-		"eu.urbreathdsjobs.listener",
-		"eu.urbreathdsjobs.dto",
-		"eu.urbreathdsjobs.job",
-		"eu.urbreathdsjobs.client.minio",
-		"eu.urbreathdsjobs.client.wms",
-		"eu.urbreathdsjobs.writer"})
+@SpringBootApplication(scanBasePackages = "eu.urbreathdsjobs")
 public class App {
 
     public static void main(String[] args) {

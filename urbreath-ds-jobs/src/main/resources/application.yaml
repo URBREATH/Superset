@@ -95,9 +95,31 @@ wms:
       FIC_THRESHOLD_PRECIPITATION_24H_URB: TALLIN_PRECIP_SENSOR
       FIC_THRESHOLD_GUSTMAX_URB: TALLIN_WIND_SENSOR
 
+frost:
+  enabled: false
+  base-url: https://frost-dev.urbreath.tech/FROST-Server/v1.1
+  id-param: 19862
+  page-size: 500
+  order-by: phenomenonTime desc
+  expand: Datastream($expand=Thing,Sensor,ObservedProperty)
+  datastreams: []
+  # Esempio:
+  # datastreams:
+  #   - datastream-id: 1
+  #     sensor-id: 1001
+  #     city: MADRID
+  #     description: Temperatura centralina Madrid
+  #     observed-property: temperature
+  #     measure-type: ACTUAL
+  #     source: FROST
+  #     filter: result ne null
+
 logging:
   level:
     eu.urbreathdsjobs.job.JobWSMScheduler: INFO
     eu.urbreathdsjobs.job.WmsImportTasklet: INFO
     eu.urbreathdsjobs.client.wms.WmsHttpClientService: INFO
     eu.urbreathdsjobs.client.wms.WmsResponseHandlerService: INFO
+    eu.urbreathdsjobs.client.frost.FrostClientService: INFO
+    eu.urbreathdsjobs.client.frost.FrostResponseHandlerService: INFO
+    eu.urbreathdsjobs.job.FrostImportTasklet: INFO
