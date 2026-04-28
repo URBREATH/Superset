@@ -1,6 +1,7 @@
 package eu.urbreathdsjobs.client.wms.sensor;
 
 import eu.urbreathdsjobs.client.wms.City;
+import eu.urbreathdsjobs.client.wms.WmsProperties;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
@@ -9,49 +10,84 @@ import java.util.Map;
 
 /**
  * Registry for mapping WMS request keys to sensor identifiers by city.
- * This registry maintains mappings between WMS keys and their corresponding sensors.
+ * Mappings are loaded dynamically from the {@code wms.sensors} section
+ * of the application configuration (application.yaml).
+ *
+ * <pre>
+ * wms:
+ *   sensors:
+ *     MADRID:
+ *       FIC_THRESHOLD_TMIN_URB: 1002
+ *       FIC_THRESHOLD_TMAX_URB: 1001
+ *       ...
+ * </pre>
  */
 @Service
 @Slf4j
 public class WmsSensorRegistry {
 
+    private final WmsProperties wmsProperties;
     private final Map<String, SensorMapping> sensorMappings;
 
-    public WmsSensorRegistry() {
+    public WmsSensorRegistry(WmsProperties wmsProperties) {
+        this.wmsProperties = wmsProperties;
         this.sensorMappings = initializeSensorMappings();
     }
 
     /**
-     * Initialize sensor mappings for all cities and their respective keys.
-     * The mappings are based on city and WMS parameter key combinations.
+     * Builds sensor mappings by reading {@code wms.sensors} from the application properties.
+     * Each entry maps a city name to a map of WMS threshold keys and their sensor IDs.
      *
      * @return Map of city-key combinations to sensor identifiers
      */
     private Map<String, SensorMapping> initializeSensorMappings() {
         Map<String, SensorMapping> mappings = new HashMap<>();
 
-        // Madrid sensors
-        mappings.put(getSensorKey(City.MADRID, "precipitation"), new SensorMapping(City.MADRID, "precipitation", "MADRID_PRECIP_SENSOR"));
-        mappings.put(getSensorKey(City.MADRID, "temperature"), new SensorMapping(City.MADRID, "temperature", "MADRID_TEMP_SENSOR"));
-        mappings.put(getSensorKey(City.MADRID, "traffic"), new SensorMapping(City.MADRID, "traffic", "MADRID_TRAFFIC_SENSOR"));
+        Map<String, Map<String, String>> sensorsConfig = wmsProperties.getSensors();
+        if (sensorsConfig == null || sensorsConfig.isEmpty()) {
+            log.warn("No sensor mappings found under wms.sensors in configuration");
+            return mappings;
+        }
 
-        // Leuven sensors
-        mappings.put(getSensorKey(City.LEUVEN, "precipitation"), new SensorMapping(City.LEUVEN, "precipitation", "LEUVEN_PRECIP_SENSOR"));
-        mappings.put(getSensorKey(City.LEUVEN, "temperature"), new SensorMapping(City.LEUVEN, "temperature", "LEUVEN_TEMP_SENSOR"));
-        mappings.put(getSensorKey(City.LEUVEN, "traffic"), new SensorMapping(City.LEUVEN, "traffic", "LEUVEN_TRAFFIC_SENSOR"));
+        for (Map.Entry<String, Map<String, String>> cityEntry : sensorsConfig.entrySet()) {
+            String cityName = cityEntry.getKey();
+            City city = resolveCity(cityName);
+            if (city == null) {
+                log.warn("Unknown city '{}' found in wms.sensors configuration – skipping", cityName);
+                continue;
+            }
 
-        // Cluj sensors
-        mappings.put(getSensorKey(City.CLUJ, "precipitation"), new SensorMapping(City.CLUJ, "precipitation", "CLUJ_PRECIP_SENSOR"));
-        mappings.put(getSensorKey(City.CLUJ, "temperature"), new SensorMapping(City.CLUJ, "temperature", "CLUJ_TEMP_SENSOR"));
-        mappings.put(getSensorKey(City.CLUJ, "traffic"), new SensorMapping(City.CLUJ, "traffic", "CLUJ_TRAFFIC_SENSOR"));
+            Map<String, String> keySensorMap = cityEntry.getValue();
+            if (keySensorMap == null || keySensorMap.isEmpty()) {
+                log.warn("No sensor keys configured for city '{}'", cityName);
+                continue;
+            }
 
-        // Tallinn sensors
-        mappings.put(getSensorKey(City.TALLIN, "precipitation"), new SensorMapping(City.TALLIN, "precipitation", "TALLIN_PRECIP_SENSOR"));
-        mappings.put(getSensorKey(City.TALLIN, "temperature"), new SensorMapping(City.TALLIN, "temperature", "TALLIN_TEMP_SENSOR"));
-        mappings.put(getSensorKey(City.TALLIN, "traffic"), new SensorMapping(City.TALLIN, "traffic", "TALLIN_TRAFFIC_SENSOR"));
+            for (Map.Entry<String, String> sensorEntry : keySensorMap.entrySet()) {
+                String wmsKey  = sensorEntry.getKey();
+                String sensorId = sensorEntry.getValue();
+                mappings.put(getSensorKey(city, wmsKey), new SensorMapping(city, wmsKey, sensorId));
+                log.debug("Loaded sensor mapping: city={}, wmsKey={}, sensorId={}", cityName, wmsKey, sensorId);
+            }
+        }
 
         log.info("WmsSensorRegistry initialized with {} sensor mappings", mappings.size());
         return mappings;
+    }
+
+    /**
+     * Resolves a {@link City} enum value from its string name (case-insensitive).
+     *
+     * @param cityName the city name as it appears in the configuration
+     * @return the matching {@link City}, or {@code null} if not found
+     */
+    private City resolveCity(String cityName) {
+        for (City c : City.values()) {
+            if (c.getName().equalsIgnoreCase(cityName)) {
+                return c;
+            }
+        }
+        return null;
     }
 
     /**

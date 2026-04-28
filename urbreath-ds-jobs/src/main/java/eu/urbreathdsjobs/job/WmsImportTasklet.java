@@ -18,7 +18,10 @@ import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 @Component
 @Slf4j
@@ -47,40 +50,96 @@ public class WmsImportTasklet implements Tasklet {
 
     @Override
     public RepeatStatus execute(@NonNull StepContribution contribution, @NonNull ChunkContext chunkContext) throws Exception {
+        long stepStartNanos = System.nanoTime();
         List<WmsRequest> requests = wmsUrlService.generateUrlsForAllCities();
+        log.info("Starting WMS import step. Generated {} requests.", requests.size());
         int successCount = 0;
         int failedCount = 0;
 
         List<Measurement> allMeasurements = new ArrayList<>();
 
         for (WmsRequest request : requests) {
+            long startNanos = System.nanoTime();
             try {
+                log.debug("Calling WMS endpoint for city={}, callType={}", request.getCity(), request.getCallType());
                 WmsCallResult result = wmsHttpClientService.fetch(request);
                 List<Measurement> measurements = wmsResponseHandlerService.handle(result);
+                long elapsedMs = (System.nanoTime() - startNanos) / 1_000_000;
                 allMeasurements.addAll(measurements);
                 successCount++;
-            } catch (RuntimeException ex) {
-                failedCount++;
-                log.warn(
-                        "WMS request failed for city={}, callType={}. Cause: {}",
+                log.info(
+                        "WMS request completed for city={}, callType={}, measurements={}, elapsedMs={}",
                         request.getCity(),
                         request.getCallType(),
+                        measurements.size(),
+                        elapsedMs
+                );
+            } catch (RuntimeException ex) {
+                long elapsedMs = (System.nanoTime() - startNanos) / 1_000_000;
+                failedCount++;
+                log.warn(
+                        "WMS request failed for city={}, callType={}, elapsedMs={}. Cause: {}",
+                        request.getCity(),
+                        request.getCallType(),
+                        elapsedMs,
                         ex.getMessage()
                 );
             }
         }
 
-        log.info("WMS import step completed. total={}, success={}, failed={}, totalMeasurements={}",
-                requests.size(), successCount, failedCount, allMeasurements.size());
+        long wmsPhaseElapsedMs = (System.nanoTime() - stepStartNanos) / 1_000_000;
+        log.info("WMS import step completed. total={}, success={}, failed={}, totalMeasurements={}, elapsedMs={}",
+                requests.size(), successCount, failedCount, allMeasurements.size(), wmsPhaseElapsedMs);
 
+        long deleteAndWriteElapsedMs = 0;
         if (!allMeasurements.isEmpty()) {
-            Long idParam = wmsProperties.getIdParam();
-            log.info("Persisting measurements: deleteAndWrite for id_param={}, count={}", idParam, allMeasurements.size());
-            measurementWriter.deleteAndWrite(idParam, allMeasurements);
+            List<Long> sensorIds = getConfiguredSensorIds();
+            log.info("Persisting measurements: deleteAndWriteBySensorIds for sensors={}, count={}", sensorIds, allMeasurements.size());
+            long deleteAndWriteStartNanos = System.nanoTime();
+            measurementWriter.deleteAndWriteBySensorIds(sensorIds, allMeasurements);
+            deleteAndWriteElapsedMs = (System.nanoTime() - deleteAndWriteStartNanos) / 1_000_000;
+            log.info("deleteAndWriteBySensorIds completed for sensorsCount={}, count={}, elapsedMs={}",
+                    sensorIds.size(), allMeasurements.size(), deleteAndWriteElapsedMs);
         } else {
             log.warn("No measurements collected, skipping deleteAndWrite.");
         }
 
+        long endToEndElapsedMs = (System.nanoTime() - stepStartNanos) / 1_000_000;
+        log.info("WMS import step end-to-end completed. total={}, success={}, failed={}, totalMeasurements={}, deleteAndWriteElapsedMs={}, endToEndElapsedMs={}",
+                requests.size(), successCount, failedCount, allMeasurements.size(), deleteAndWriteElapsedMs, endToEndElapsedMs);
+
         return RepeatStatus.FINISHED;
+    }
+
+    private List<Long> getConfiguredSensorIds() {
+        Map<String, Map<String, String>> sensorsConfig = wmsProperties.getSensors();
+        if (sensorsConfig == null || sensorsConfig.isEmpty()) {
+            throw new IllegalStateException("Missing WMS sensor configuration under wms.sensors");
+        }
+
+        Set<Long> sensorIds = new LinkedHashSet<>();
+        for (Map.Entry<String, Map<String, String>> cityEntry : sensorsConfig.entrySet()) {
+            Map<String, String> citySensors = cityEntry.getValue();
+            if (citySensors == null || citySensors.isEmpty()) {
+                continue;
+            }
+
+            for (String sensorIdRaw : citySensors.values()) {
+                try {
+                    sensorIds.add(Long.valueOf(sensorIdRaw));
+                } catch (NumberFormatException ex) {
+                    throw new IllegalStateException(
+                            String.format("Invalid sensor id '%s' in wms.sensors for city '%s'", sensorIdRaw, cityEntry.getKey()),
+                            ex
+                    );
+                }
+            }
+        }
+
+        if (sensorIds.isEmpty()) {
+            throw new IllegalStateException("No sensor ids found in wms.sensors configuration");
+        }
+
+        return new ArrayList<>(sensorIds);
     }
 }

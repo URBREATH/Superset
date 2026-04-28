@@ -56,7 +56,6 @@ public class WmsUrlBuilder {
         url.append("&").append(HEIGHT_PARAM);
         url.append("&").append(CRS_PARAM);
         url.append("&BBOX=").append(bbox);
-        url.append("&TIME=").append("2026-04-20");
 
         return url.toString();
     }

@@ -47,7 +47,7 @@ public class JobWSMScheduler {
 
     @Scheduled(
             initialDelayString = "${app.scheduler.wms.initial-delay-ms:30000}",
-            fixedRateString = "${app.scheduler.wms.fixed-rate-ms:120000}"
+            fixedRateString = "${app.scheduler.wms.fixed-rate-ms:1200000}"
     )
     public void runWmsImportJob() throws Exception {
         if (!wmsLock.tryLock()) {

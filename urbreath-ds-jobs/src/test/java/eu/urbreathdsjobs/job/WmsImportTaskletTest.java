@@ -17,9 +17,11 @@ import org.springframework.batch.core.scope.context.ChunkContext;
 import org.springframework.batch.repeat.RepeatStatus;
 
 import java.util.List;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -36,7 +38,9 @@ class WmsImportTaskletTest {
         MeasurementWriter measurementWriter = Mockito.mock(MeasurementWriter.class);
         WmsProperties wmsProperties = Mockito.mock(WmsProperties.class);
 
-        when(wmsProperties.getIdParam()).thenReturn(1L);
+        when(wmsProperties.getSensors()).thenReturn(Map.of(
+                "MADRID", Map.of("FIC_THRESHOLD_TMIN_URB", "1002")
+        ));
 
         WmsImportTasklet tasklet = new WmsImportTasklet(
                 wmsUrlService, wmsHttpClientService, handlerService, measurementWriter, wmsProperties);
@@ -60,7 +64,7 @@ class WmsImportTaskletTest {
         assertEquals(RepeatStatus.FINISHED, status);
         verify(wmsHttpClientService, times(2)).fetch(any(WmsRequest.class));
         verify(handlerService, times(2)).handle(any(WmsCallResult.class));
-        verify(measurementWriter, times(1)).deleteAndWrite(any(), any());
+        verify(measurementWriter, times(1)).deleteAndWriteBySensorIds(anyList(), anyList());
     }
 }
 

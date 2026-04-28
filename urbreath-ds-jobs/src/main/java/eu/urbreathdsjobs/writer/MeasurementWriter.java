@@ -2,7 +2,9 @@ package eu.urbreathdsjobs.writer;
 
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.postgresql.util.PGobject;
 import org.springframework.batch.item.Chunk;
@@ -39,9 +41,25 @@ public class MeasurementWriter implements ItemWriter<Measurement> {
             DELETE FROM public.measurement WHERE id_param = ?
             """;
 
+    private static final String DELETE_BY_ID_SENSOR_IN_PREFIX = "DELETE FROM public.measurement WHERE id_sensor IN (";
+    private static final String DELETE_BY_ID_SENSOR_IN_SUFFIX = ")";
+
     public void deleteByIdParam(Long idParam) {
         int deleted = jdbcTemplate.update(DELETE_BY_ID_PARAM, idParam);
         log.info("Deleted {} measurements for id_param={}", deleted, idParam);
+    }
+
+    public void deleteBySensorIds(List<Long> sensorIds) {
+        if (sensorIds == null || sensorIds.isEmpty()) {
+            log.warn("No sensor ids provided for deletion. Skipping delete by id_sensor.");
+            return;
+        }
+
+        List<Long> distinctSensorIds = sensorIds.stream().distinct().collect(Collectors.toList());
+        String placeholders = String.join(",", Collections.nCopies(distinctSensorIds.size(), "?"));
+        String sql = DELETE_BY_ID_SENSOR_IN_PREFIX + placeholders + DELETE_BY_ID_SENSOR_IN_SUFFIX;
+        int deleted = jdbcTemplate.update(sql, distinctSensorIds.toArray());
+        log.info("Deleted {} measurements for id_sensor IN {}", deleted, distinctSensorIds);
     }
 
     private static final int CHUNK_SIZE = 500;
@@ -56,6 +74,20 @@ public class MeasurementWriter implements ItemWriter<Measurement> {
             log.debug("Written chunk [{}-{}] of {}", i, i + chunk.size(), total);
         }
         log.info("deleteAndWrite completed for id_param={}, inserted={}", idParam, total);
+    }
+
+    @Transactional
+    public void deleteAndWriteBySensorIds(List<Long> sensorIds, List<Measurement> measurements) throws Exception {
+        deleteBySensorIds(sensorIds);
+        int total = measurements.size();
+        for (int i = 0; i < total; i += CHUNK_SIZE) {
+            List<Measurement> chunk = measurements.subList(i, Math.min(i + CHUNK_SIZE, total));
+            write(new Chunk<>(chunk));
+            log.debug("Written chunk [{}-{}] of {}", i, i + chunk.size(), total);
+        }
+        log.info("deleteAndWriteBySensorIds completed for sensorsCount={}, inserted={}",
+                sensorIds != null ? sensorIds.size() : 0,
+                total);
     }
 
     @Override
