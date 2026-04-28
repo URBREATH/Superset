@@ -16,6 +16,7 @@ public class FrostProperties {
     private String baseUrl;
     private Long idParam;
     private Integer pageSize = 500;
+    private boolean followPaginationLinks = true;
     private String orderBy = "phenomenonTime desc";
     private String expand = "Datastream($expand=Thing,Sensor,ObservedProperty)";
     private List<DatastreamConfig> datastreams = new ArrayList<>();
