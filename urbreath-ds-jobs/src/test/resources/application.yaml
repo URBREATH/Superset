@@ -33,6 +33,27 @@ Jasypt:
 app:
   access-key: Municipia
   secret-key: zS3fx4zeECPuc4K
+  scheduler:
+    import:
+      traffic:
+        enabled: false
+        cron: "0/30 * * * * *"
+      temperature:
+        enabled: false
+        cron: "0/30 * * * * *"
+      precipitation:
+        enabled: false
+        cron: "0/30 * * * * *"
+    wms:
+      enabled: false
+      cron: "0 0/20 * * * *"
+    frost:
+      config:
+        enabled: false
+        cron: "0 0/20 * * * *"
+      import:
+        enabled: false
+        cron: "0 0/20 * * * *"
 
 wms:
   id-param: 19862

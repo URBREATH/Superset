@@ -9,6 +9,7 @@ import org.springframework.batch.core.JobParametersBuilder;
 import org.springframework.batch.core.explore.JobExplorer;
 import org.springframework.batch.core.launch.JobLauncher;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -27,6 +28,16 @@ public class JobImportScheduler {
     // Un lock per job
     private final Lock trafficLock = new ReentrantLock();
     private final Lock temperatureLock = new ReentrantLock();
+    private final Lock precipitationLock = new ReentrantLock();
+
+    @Value("${app.scheduler.import.traffic.enabled:true}")
+    private boolean trafficEnabled;
+
+    @Value("${app.scheduler.import.temperature.enabled:true}")
+    private boolean temperatureEnabled;
+
+    @Value("${app.scheduler.import.precipitation.enabled:true}")
+    private boolean precipitationEnabled;
     
     public JobImportScheduler(
             JobLauncher jobLauncher,
@@ -41,20 +52,29 @@ public class JobImportScheduler {
         this.jobExplorer = jobExplorer;
     }
 
-//    @Scheduled(cron = "0/30 * * * * *")
-//    public void runTrafficJob() throws Exception {
-//        runJob(trafficJob, trafficLock, 1L);
-//    }
-//
-//    @Scheduled(cron = "0/30 * * * * *")
-//    public void runTemperatureImportJob() throws Exception {
-//        runJob(temperatureImportJob, temperatureLock, 2L);
-//    }
-//
-//    @Scheduled(cron = "0/30 * * * * *")
-//    public void runPrecipitationImportJob() throws Exception {
-//        runJob(precipitationImportJob, temperatureLock, 3L);
-//    }
+    @Scheduled(cron = "${app.scheduler.import.traffic.cron:0/30 * * * * *}")
+    public void runTrafficJob() throws Exception {
+        if (!trafficEnabled) {
+            return;
+        }
+        runJob(trafficJob, trafficLock, 1L);
+    }
+
+    @Scheduled(cron = "${app.scheduler.import.temperature.cron:0/30 * * * * *}")
+    public void runTemperatureImportJob() throws Exception {
+        if (!temperatureEnabled) {
+            return;
+        }
+        runJob(temperatureImportJob, temperatureLock, 2L);
+    }
+
+    @Scheduled(cron = "${app.scheduler.import.precipitation.cron:0/30 * * * * *}")
+    public void runPrecipitationImportJob() throws Exception {
+        if (!precipitationEnabled) {
+            return;
+        }
+        runJob(precipitationImportJob, precipitationLock, 3L);
+    }
 
     private void runJob(Job job, Lock lock, Long batchID) throws Exception {
         if (!lock.tryLock()) {

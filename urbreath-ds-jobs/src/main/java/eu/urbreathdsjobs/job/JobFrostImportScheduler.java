@@ -7,6 +7,7 @@ import org.springframework.batch.core.explore.JobExplorer;
 import org.springframework.batch.core.launch.JobLauncher;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -16,63 +17,64 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 @Component
-public class JobWSMScheduler {
+@ConditionalOnProperty(prefix = "frost", name = "enabled", havingValue = "true")
+public class JobFrostImportScheduler {
 
-    private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(JobWSMScheduler.class);
+    private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(JobFrostImportScheduler.class);
 
     private final JobLauncher jobLauncher;
-    private final Job wmsImportJob;
+    private final Job frostImportJob;
     private final JobExplorer jobExplorer;
 
-    @Value("${app.scheduler.wms.enabled:true}")
-    private boolean wmsEnabled;
+    @Value("${app.scheduler.frost.import.enabled:true}")
+    private boolean frostImportEnabled;
 
-    private final Lock wmsLock = new ReentrantLock();
+    private final Lock frostImportLock = new ReentrantLock();
 
-    public JobWSMScheduler(
+    public JobFrostImportScheduler(
             JobLauncher jobLauncher,
-            @Qualifier("wmsImportJob") Job wmsImportJob,
+            @Qualifier("frostImportJob") Job frostImportJob,
             JobExplorer jobExplorer
     ) {
         this.jobLauncher = jobLauncher;
-        this.wmsImportJob = wmsImportJob;
+        this.frostImportJob = frostImportJob;
         this.jobExplorer = jobExplorer;
     }
 
     @EventListener(ApplicationReadyEvent.class)
-    public void runWmsImportJobOnStartup() {
+    public void runFrostImportJobOnStartup() {
         try {
-            log.info("Application ready, launching {} on startup...", wmsImportJob.getName());
-            runWmsImportJob();
+            log.info("Application ready, launching {} on startup...", frostImportJob.getName());
+            runFrostImportJob();
         } catch (Exception ex) {
-            log.error("Unable to launch {} on startup", wmsImportJob.getName(), ex);
+            log.error("Unable to launch {} on startup", frostImportJob.getName(), ex);
         }
     }
 
-    @Scheduled(cron = "${app.scheduler.wms.cron:0 0/20 * * * *}")
-    public void runWmsImportJob() throws Exception {
-        if (!wmsEnabled) {
+    @Scheduled(cron = "${app.scheduler.frost.import.cron:0 0/20 * * * *}")
+    public void runFrostImportJob() throws Exception {
+        if (!frostImportEnabled) {
             return;
         }
-        if (!wmsLock.tryLock()) {
-            log.warn("{} already running in scheduler lock, skipping...", wmsImportJob.getName());
+        if (!frostImportLock.tryLock()) {
+            log.warn("{} already running in scheduler lock, skipping...", frostImportJob.getName());
             return;
         }
 
         try {
-            if (isJobRunning(wmsImportJob)) {
-                log.warn("{} already running in batch metadata, skipping...", wmsImportJob.getName());
+            if (isJobRunning(frostImportJob)) {
+                log.warn("{} already running in batch metadata, skipping...", frostImportJob.getName());
                 return;
             }
 
             JobParameters params = new JobParametersBuilder()
-                    .addLong("batch.id", 4L)
+                    .addLong("batch.id", 5L)
                     .addLong("run.id", System.currentTimeMillis())
                     .toJobParameters();
 
-            jobLauncher.run(wmsImportJob, params);
+            jobLauncher.run(frostImportJob, params);
         } finally {
-            wmsLock.unlock();
+            frostImportLock.unlock();
         }
     }
 

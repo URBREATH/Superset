@@ -5,6 +5,7 @@ import eu.urbreathdsjobs.client.frost.FrostClientService;
 import eu.urbreathdsjobs.client.frost.FrostProperties;
 import eu.urbreathdsjobs.client.frost.FrostResponseHandlerService;
 import eu.urbreathdsjobs.model.Measurement;
+import eu.urbreathdsjobs.tasklet.FrostImportTasklet;
 import eu.urbreathdsjobs.writer.MeasurementWriter;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

@@ -8,6 +8,7 @@ import eu.urbreathdsjobs.client.wms.WmsRequest;
 import eu.urbreathdsjobs.client.wms.WmsResponseHandlerService;
 import eu.urbreathdsjobs.client.wms.WmsUrlService;
 import eu.urbreathdsjobs.model.Measurement;
+import eu.urbreathdsjobs.tasklet.WmsImportTasklet;
 import eu.urbreathdsjobs.writer.MeasurementWriter;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

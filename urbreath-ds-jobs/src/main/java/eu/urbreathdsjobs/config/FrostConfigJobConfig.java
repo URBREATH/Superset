@@ -1,6 +1,6 @@
 package eu.urbreathdsjobs.config;
 
-import eu.urbreathdsjobs.tasklet.FrostImportTasklet;
+import eu.urbreathdsjobs.tasklet.FrostConfigTasklet;
 import lombok.RequiredArgsConstructor;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.Step;
@@ -18,23 +18,23 @@ import org.springframework.transaction.PlatformTransactionManager;
 @RequiredArgsConstructor
 @EnableBatchProcessing
 @ConditionalOnProperty(prefix = "frost", name = "enabled", havingValue = "true")
-public class FrostImportJobConfig {
+public class FrostConfigJobConfig {
 
     private final JobRepository jobRepository;
     private final PlatformTransactionManager transactionManager;
-    private final FrostImportTasklet frostImportTasklet;
+    private final FrostConfigTasklet frostConfigTasklet;
 
     @Bean
-    public Step frostImportStep() {
-        return new StepBuilder("frostImportStep", jobRepository)
-                .tasklet(frostImportTasklet, transactionManager)
+    public Step frostConfigStep() {
+        return new StepBuilder("frostConfigStep", jobRepository)
+                .tasklet(frostConfigTasklet, transactionManager)
                 .build();
     }
 
     @Bean
-    public Job frostImportJob() {
-        return new JobBuilder("frostImportJob", jobRepository)
-                .start(frostImportStep())
+    public Job frostConfigJob() {
+        return new JobBuilder("frostConfigJob", jobRepository)
+                .start(frostConfigStep())
                 .incrementer(new RunIdIncrementer())
                 .build();
     }

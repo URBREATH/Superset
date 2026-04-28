@@ -1,4 +1,4 @@
-package eu.urbreathdsjobs.job;
+package eu.urbreathdsjobs.tasklet;
 
 import eu.urbreathdsjobs.client.wms.WmsCallResult;
 import eu.urbreathdsjobs.client.wms.WmsHttpClientService;

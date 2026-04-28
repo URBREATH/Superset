@@ -7,12 +7,12 @@ spring:
       maximum-pool-size: 10
       minimum-idle: 5
       connection-timeout: 30000
-      max-lifetime: 540000          
-      keepalive-time: 30000        
+      max-lifetime: 540000
+      keepalive-time: 30000
       validation-timeout: 5000
       connection-test-query: SELECT 1
       data-source-properties:
-         rewriteBatchedStatements: true
+        rewriteBatchedStatements: true
 
   batch:
     jdbc:
@@ -21,11 +21,11 @@ spring:
       enabled: false
 
 minio:
-    endpoint: https://minio-api-dev.urbreath.tech/
-    access-key: ENC(kaas+FptqF3ldcOhOl67cevgG6XvkvELSr1GUXkY5FpQQONV/KkmINdGsyIoj7XU)
-    secret-key: ENC(gAPJR5i+7GDATUjwCN8ChkfcVjptAtT0jjoMiKyUQ/meS/pOYCD+dYUZ+ZpFMNn6)
-  
-  
+  endpoint: https://minio-api-dev.urbreath.tech/
+  access-key: ENC(kaas+FptqF3ldcOhOl67cevgG6XvkvELSr1GUXkY5FpQQONV/KkmINdGsyIoj7XU)
+  secret-key: ENC(gAPJR5i+7GDATUjwCN8ChkfcVjptAtT0jjoMiKyUQ/meS/pOYCD+dYUZ+ZpFMNn6)
+
+
 Jasypt:
   encryptor:
     password: 3DhnYMX8IuJpTASR
@@ -33,6 +33,27 @@ Jasypt:
 app:
   access-key: Municipia
   secret-key: zS3fx4zeECPuc4K
+  scheduler:
+    import:
+      traffic:
+        enabled: false
+        cron: "0/30 * * * * *"
+      temperature:
+        enabled: false
+        cron: "0/30 * * * * *"
+      precipitation:
+        enabled: false
+        cron: "0/30 * * * * *"
+    wms:
+      enabled: false
+      cron: "0 0/20 * * * *"
+    frost:
+      config:
+        enabled: false
+        cron: "0 0/20 * * * *"
+      import:
+        enabled: false
+        cron: "0 0/20 * * * *"
 
 wms:
   id-param: 19862
@@ -58,7 +79,7 @@ wms:
       timezone: Europe%2FTallin
       i: 278
       j: 364
-  
+
   call-types:
     mintemperature:
       layer: FIC_SAMPLE_PROB_TMIN_R00R12_URB
@@ -75,25 +96,25 @@ wms:
 
   sensors:
     MADRID:
-      FIC_THRESHOLD_TMIN_URB: 1002
-      FIC_THRESHOLD_TMAX_URB: 1001
-      FIC_THRESHOLD_PRECIPITATION_24H_URB: 1003
-      FIC_THRESHOLD_GUSTMAX_URB: 1004
-#    LEUVEN:
-#      FIC_THRESHOLD_TMIN_URB: LEUVEN_TMIN_SENSOR
-#      FIC_THRESHOLD_TMAX_URB: LEUVEN_TMAX_SENSOR
-#      FIC_THRESHOLD_PRECIPITATION_24H_URB: LEUVEN_PRECIP_SENSOR
-#      FIC_THRESHOLD_GUSTMAX_URB: LEUVEN_WIND_SENSOR
+      FIC_THRESHOLD_TMIN_URB: MADRID_TMIN_SENSOR
+      FIC_THRESHOLD_TMAX_URB: MADRID_TMAX_SENSOR
+      FIC_THRESHOLD_PRECIPITATION_24H_URB: MADRID_PRECIP_SENSOR
+      FIC_THRESHOLD_GUSTMAX_URB: MADRID_WIND_SENSOR
+    LEUVEN:
+      FIC_THRESHOLD_TMIN_URB: LEUVEN_TMIN_SENSOR
+      FIC_THRESHOLD_TMAX_URB: LEUVEN_TMAX_SENSOR
+      FIC_THRESHOLD_PRECIPITATION_24H_URB: LEUVEN_PRECIP_SENSOR
+      FIC_THRESHOLD_GUSTMAX_URB: LEUVEN_WIND_SENSOR
     CLUJ:
-      FIC_THRESHOLD_TMIN_URB: 1010
-      FIC_THRESHOLD_TMAX_URB: 1009
-      FIC_THRESHOLD_PRECIPITATION_24H_URB: 1011
-      FIC_THRESHOLD_GUSTMAX_URB: 1012
+      FIC_THRESHOLD_TMIN_URB: CLUJ_TMIN_SENSOR
+      FIC_THRESHOLD_TMAX_URB: CLUJ_TMAX_SENSOR
+      FIC_THRESHOLD_PRECIPITATION_24H_URB: CLUJ_PRECIP_SENSOR
+      FIC_THRESHOLD_GUSTMAX_URB: CLUJ_WIND_SENSOR
     TALLIN:
-      FIC_THRESHOLD_TMIN_URB: 1006
-      FIC_THRESHOLD_TMAX_URB: 1005
-      FIC_THRESHOLD_PRECIPITATION_24H_URB: 1007
-      FIC_THRESHOLD_GUSTMAX_URB: 1008
+      FIC_THRESHOLD_TMIN_URB: TALLIN_TMIN_SENSOR
+      FIC_THRESHOLD_TMAX_URB: TALLIN_TMAX_SENSOR
+      FIC_THRESHOLD_PRECIPITATION_24H_URB: TALLIN_PRECIP_SENSOR
+      FIC_THRESHOLD_GUSTMAX_URB: TALLIN_WIND_SENSOR
 
 frost:
   enabled: false

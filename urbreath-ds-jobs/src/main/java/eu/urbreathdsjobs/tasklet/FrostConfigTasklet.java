@@ -1,4 +1,4 @@
-package eu.urbreathdsjobs.job;
+package eu.urbreathdsjobs.tasklet;
 
 import de.fraunhofer.iosb.ilt.sta.model.Observation;
 import eu.urbreathdsjobs.client.frost.FrostClientService;
@@ -23,7 +23,7 @@ import java.util.List;
 @Slf4j
 @RequiredArgsConstructor
 @ConditionalOnProperty(prefix = "frost", name = "enabled", havingValue = "true")
-public class FrostImportTasklet implements Tasklet {
+public class FrostConfigTasklet implements Tasklet {
 
     private final FrostClientService frostClientService;
     private final FrostResponseHandlerService frostResponseHandlerService;
@@ -46,7 +46,7 @@ public class FrostImportTasklet implements Tasklet {
             } catch (RuntimeException ex) {
                 failedCount++;
                 log.warn(
-                        "FROST import failed for datastreamId={}, city={}, cause={}",
+                        "FROST config failed for datastreamId={}, city={}, cause={}",
                         datastreamConfig.getDatastreamId(),
                         datastreamConfig.getCity(),
                         ex.getMessage()
@@ -55,7 +55,7 @@ public class FrostImportTasklet implements Tasklet {
         }
 
         log.info(
-                "FROST import completed. configuredDatastreams={}, success={}, failed={}, totalMeasurements={}",
+                "FROST config completed. configuredDatastreams={}, success={}, failed={}, totalMeasurements={}",
                 datastreamConfigs.size(),
                 successCount,
                 failedCount,
@@ -65,10 +65,11 @@ public class FrostImportTasklet implements Tasklet {
         if (!allMeasurements.isEmpty()) {
             measurementWriter.deleteAndWrite(frostProperties.getIdParam(), allMeasurements);
         } else {
-            log.warn("No FROST measurements collected, skipping deleteAndWrite.");
+            log.warn("No FROST config measurements collected, skipping deleteAndWrite.");
         }
 
         return RepeatStatus.FINISHED;
     }
 }
+
 
