@@ -8,8 +8,6 @@ import org.springframework.batch.core.launch.JobLauncher;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.boot.context.event.ApplicationReadyEvent;
-import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -41,15 +39,6 @@ public class JobFrostImportScheduler {
         this.jobExplorer = jobExplorer;
     }
 
-    @EventListener(ApplicationReadyEvent.class)
-    public void runFrostImportJobOnStartup() {
-        try {
-            log.info("Application ready, launching {} on startup...", frostImportJob.getName());
-            runFrostImportJob();
-        } catch (Exception ex) {
-            log.error("Unable to launch {} on startup", frostImportJob.getName(), ex);
-        }
-    }
 
     @Scheduled(cron = "${app.scheduler.frost.import.cron:0 0/20 * * * *}")
     public void runFrostImportJob() throws Exception {
