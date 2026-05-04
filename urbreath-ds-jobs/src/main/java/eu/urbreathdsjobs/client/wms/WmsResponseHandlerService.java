@@ -93,7 +93,7 @@ public class WmsResponseHandlerService {
                             : null;
                     measurement.setDateFrom(observationDate);
                     measurement.setDateTo(observationDate);
-
+                    measurement.setPeriod("1day");
                     Map<String, Object> metadata = new HashMap<>();
                     metadata.put(MeasurementAttributeEnum.MEASURE_TYPE.name(), Constants.MEASUREMENT_TYPE_PROJECTION);
                     metadata.put(MeasurementAttributeEnum.MEASURE_SIMULATION_COD_SCENARIO.name(), codiceScenario);
