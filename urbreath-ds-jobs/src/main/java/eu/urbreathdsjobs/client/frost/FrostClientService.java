@@ -4,6 +4,7 @@ import de.fraunhofer.iosb.ilt.sta.ServiceFailureException;
 import de.fraunhofer.iosb.ilt.sta.dao.ObservationDao;
 import de.fraunhofer.iosb.ilt.sta.model.Datastream;
 import de.fraunhofer.iosb.ilt.sta.model.FeatureOfInterest;
+import de.fraunhofer.iosb.ilt.sta.model.Id;
 import de.fraunhofer.iosb.ilt.sta.model.Observation;
 import de.fraunhofer.iosb.ilt.sta.model.ObservedProperty;
 import de.fraunhofer.iosb.ilt.sta.model.Sensor;
@@ -32,8 +33,15 @@ public class FrostClientService {
     private final FrostProperties frostProperties;
 
     public List<FrostProperties.DatastreamConfig> getConfiguredDatastreams() {
-        return frostProperties.getEnabledDatastreams();
+        List<FrostProperties.DatastreamConfig> configuredDatastreams = frostProperties.getEnabledDatastreams();
+        if (!configuredDatastreams.isEmpty()) {
+            return configuredDatastreams;
+        }
+
+        log.info("No enabled frost.datastreams configured. Falling back to datastream discovery from FROST server.");
+        return fetchDatastreamConfigsFromServer();
     }
+
 
     public Datastream findDatastream(Long datastreamId) {
         try {
@@ -150,6 +158,27 @@ public class FrostClientService {
         return countPages(pageIndex -> fetchObservationsPage(datastreamConfig, pageIndex));
     }
 
+    /**
+     * Conta il totale delle osservazioni sul server FROST per un singolo datastream
+     * usando $count=true&$top=0: una sola chiamata HTTP, nessun dato scaricato.
+     * Ritorna null se il server non supporta $count.
+     */
+    public Long countObservationsTotal(FrostProperties.DatastreamConfig datastreamConfig) {
+        if (datastreamConfig == null || datastreamConfig.getDatastreamId() == null) {
+            return null;
+        }
+        try {
+            Query<Observation> query = baseObservationQuery(datastreamConfig);
+            query.count();
+            query.top(0);
+            EntityList<Observation> result = query.list();
+            return result.getCount();
+        } catch (ServiceFailureException ex) {
+            log.warn("Unable to count observations for datastreamId={}: {}", datastreamConfig.getDatastreamId(), ex.getMessage());
+            return null;
+        }
+    }
+
     public List<Datastream> fetchDatastreamsPage(int pageIndex) {
         validatePageIndex(pageIndex);
         int pageSize = resolvePageSize();
@@ -250,8 +279,11 @@ public class FrostClientService {
         Query<Observation> query = observationDao.query();
 
         String filter = "Datastream/id eq " + datastreamConfig.getDatastreamId();
-        if (StringUtils.hasText(datastreamConfig.getFilter())) {
-            filter = "(" + filter + ") and (" + datastreamConfig.getFilter() + ")";
+        String configuredFilter = StringUtils.hasText(datastreamConfig.getFilter())
+                ? datastreamConfig.getFilter()
+                : frostProperties.getFilter();
+        if (StringUtils.hasText(configuredFilter)) {
+            filter = "(" + filter + ") and (" + configuredFilter + ")";
         }
 
         query.filter(filter);
@@ -270,6 +302,132 @@ public class FrostClientService {
             return frostProperties.getPageSize();
         }
         return 500;
+    }
+
+    private List<FrostProperties.DatastreamConfig> fetchDatastreamConfigsFromServer() {
+        List<FrostProperties.DatastreamConfig> configs = new ArrayList<>();
+        int pageIndex = 0;
+        int skippedDatastreams = 0;
+        long totalStart = System.nanoTime();
+
+        while (true) {
+            long pageStart = System.nanoTime();
+            List<Datastream> page = fetchDatastreamsPage(pageIndex);
+            long pageElapsedMs = (System.nanoTime() - pageStart) / 1_000_000;
+
+            if (page.isEmpty()) {
+                log.debug("Discovery: page {} empty after {} ms, stopping", pageIndex, pageElapsedMs);
+                break;
+            }
+
+            log.debug("Discovery: fetched page {} with {} datastreams in {} ms", pageIndex, page.size(), pageElapsedMs);
+
+            for (Datastream datastream : page) {
+                if (shouldSkipDatastream(datastream)) {
+                    skippedDatastreams++;
+                    continue;
+                }
+
+                long convertStart = System.nanoTime();
+                FrostProperties.DatastreamConfig config = toDatastreamConfig(datastream);
+                long convertElapsedMs = (System.nanoTime() - convertStart) / 1_000_000;
+
+                if (shouldSkipDatastreamConfig(config)) {
+                    skippedDatastreams++;
+                    continue;
+                }
+
+                log.debug("Discovery: datastream id={} converted to config in {} ms", config.getDatastreamId(), convertElapsedMs);
+                configs.add(config);
+            }
+
+            if (!frostProperties.isFollowPaginationLinks() || page.size() < resolvePageSize()) {
+                break;
+            }
+            pageIndex++;
+            break; //TODO DA TOGLIERE
+        }
+
+        long totalElapsedMs = (System.nanoTime() - totalStart) / 1_000_000;
+        log.info("Discovered {} datastream configurations from FROST server in {} ms (pages={}, skipped={})",
+                configs.size(), totalElapsedMs, pageIndex + 1, skippedDatastreams);
+        return configs;
+    }
+
+    private boolean shouldSkipDatastream(Datastream datastream) {
+        if (datastream == null) {
+            log.debug("Skipping null FROST datastream");
+            return true;
+        }
+
+        Long datastreamId = idValue(datastream.getId());
+        if (datastreamId == null) {
+            log.debug("Skipping FROST datastream because id is missing");
+            return true;
+        }
+
+        return false;
+    }
+
+    private boolean shouldSkipDatastreamConfig(FrostProperties.DatastreamConfig config) {
+        // logica se devo skippare il DatastreamConfig
+        if (config == null) {
+            log.debug("Skipping null FROST datastream");
+            return true;
+        }
+
+        return config == null;
+    }
+
+    private FrostProperties.DatastreamConfig toDatastreamConfig(Datastream datastream) {
+        Long datastreamId = idValue(datastream != null ? datastream.getId() : null);
+        if (datastreamId == null) {
+            log.warn("Skipping FROST datastream without id");
+            return null;
+        }
+
+        Sensor sensor;
+        try {
+            sensor = datastream.getSensor();
+        } catch (ServiceFailureException ex) {
+            throw new RuntimeException("Unable to resolve FROST sensor for datastream " + datastreamId, ex);
+        }
+
+        Long sensorId = idValue(sensor != null ? sensor.getId() : null);
+        if (sensorId == null) {
+            log.warn("Skipping FROST datastream {} because sensor id is missing", datastreamId);
+            return null;
+        }
+
+        FrostProperties.DatastreamConfig config = new FrostProperties.DatastreamConfig();
+        config.setDatastreamId(datastreamId);
+        config.setSensorId(sensorId);
+        config.setDescription(datastream.getDescription());
+        if (StringUtils.hasText(frostProperties.getFilter())) {
+            config.setFilter(frostProperties.getFilter());
+        }
+
+        try {
+            ObservedProperty observedProperty = datastream.getObservedProperty();
+            if (observedProperty != null) {
+                config.setObservedProperty(observedProperty.getName());
+            }
+        } catch (ServiceFailureException ex) {
+            throw new RuntimeException("Unable to resolve FROST observedProperty for datastream " + datastreamId, ex);
+        }
+
+        return config;
+    }
+
+    private Long idValue(Id id) {
+        if (id == null || id.getValue() == null) {
+            return null;
+        }
+        Object value = id.getValue();
+        if (value instanceof Number number) {
+            return number.longValue();
+        }
+        return Long.valueOf(value.toString());
     }
 
     private <T> List<T> toList(Iterator<T> iterator) {

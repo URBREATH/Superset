@@ -18,6 +18,8 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -26,14 +28,15 @@ import static org.mockito.Mockito.when;
 class FrostImportTaskletTest {
 
     @Test
-    @DisplayName("Should process all configured FROST datastreams")
-    void shouldProcessAllConfiguredFrostDatastreams() throws Exception {
+    @DisplayName("Should process all configured FROST datastreams with pagination")
+    void shouldProcessAllConfiguredFrostDatastreamsWithPagination() throws Exception {
         FrostClientService frostClientService = Mockito.mock(FrostClientService.class);
         FrostResponseHandlerService handlerService = Mockito.mock(FrostResponseHandlerService.class);
         MeasurementWriter measurementWriter = Mockito.mock(MeasurementWriter.class);
         FrostProperties frostProperties = Mockito.mock(FrostProperties.class);
 
         when(frostProperties.getIdParam()).thenReturn(19862L);
+        when(frostProperties.isFollowPaginationLinks()).thenReturn(true);
 
         FrostImportTasklet tasklet = new FrostImportTasklet(
                 frostClientService,
@@ -50,21 +53,45 @@ class FrostImportTaskletTest {
         config2.setSensorId(502L);
 
         when(frostClientService.getConfiguredDatastreams()).thenReturn(List.of(config1, config2));
-        when(frostClientService.fetchObservations(any(FrostProperties.DatastreamConfig.class)))
-                .thenReturn(List.of(new Observation()))
-                .thenReturn(List.of(new Observation()));
+
+        // Config 1: 2 pages
+        Observation obs1 = new Observation();
+        Observation obs2 = new Observation();
+        Observation obs3 = new Observation();
+
+        when(frostClientService.fetchObservationsPage(any(), anyInt()))
+                .thenReturn(List.of(obs1, obs2))  // page 0 for config1
+                .thenReturn(List.of(obs3))        // page 1 for config1
+                .thenReturn(List.of())             // page 2 for config1 (empty)
+                .thenReturn(List.of(new Observation())) // page 0 for config2
+                .thenReturn(List.of());             // page 1 for config2 (empty)
+
+        Measurement m1 = new Measurement();
+        Measurement m2 = new Measurement();
+        Measurement m3 = new Measurement();
+
         when(handlerService.handle(any(FrostProperties.DatastreamConfig.class), any()))
-                .thenReturn(List.of(new Measurement()))
-                .thenReturn(List.of(new Measurement()));
+                .thenReturn(List.of(m1))
+                .thenReturn(List.of(m2))
+                .thenReturn(List.of(m3));
 
         StepContribution contribution = Mockito.mock(StepContribution.class);
         ChunkContext chunkContext = Mockito.mock(ChunkContext.class);
         RepeatStatus status = tasklet.execute(contribution, chunkContext);
 
         assertEquals(RepeatStatus.FINISHED, status);
-        verify(frostClientService, times(2)).fetchObservations(any(FrostProperties.DatastreamConfig.class));
-        verify(handlerService, times(2)).handle(any(FrostProperties.DatastreamConfig.class), any());
-        verify(measurementWriter, times(1)).deleteAndWrite(any(), any());
+
+        // Verify delete called once at the beginning
+        verify(measurementWriter, times(1)).deleteByIdParam(19862L);
+
+        // Verify write called 3 times (one for each page)
+        verify(measurementWriter, times(3)).write(any());
+
+        // Verify fetchObservationsPage called for all pages (including empty ones to detect end)
+        // Config1: pages 0, 1, 2 (empty)
+        // Config2: pages 0, 1 (empty)
+        // Total: 5 calls
+        verify(frostClientService, times(5)).fetchObservationsPage(any(FrostProperties.DatastreamConfig.class), anyInt());
     }
 }
 

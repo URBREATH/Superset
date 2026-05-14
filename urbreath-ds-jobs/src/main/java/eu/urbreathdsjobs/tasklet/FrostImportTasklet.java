@@ -16,7 +16,6 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Component;
 
-import java.util.ArrayList;
 import java.util.List;
 
 @Component
@@ -33,15 +32,60 @@ public class FrostImportTasklet implements Tasklet {
     @Override
     public RepeatStatus execute(@NonNull StepContribution contribution, @NonNull ChunkContext chunkContext) throws Exception {
         List<FrostProperties.DatastreamConfig> datastreamConfigs = frostClientService.getConfiguredDatastreams();
-        List<Measurement> allMeasurements = new ArrayList<>();
+        int totalMeasurements = 0;
         int successCount = 0;
         int failedCount = 0;
 
+        logDatastreamsSummary(datastreamConfigs);
+
+        // Delete once at the beginning
+        //measurementWriter.deleteByIdParam(frostProperties.getIdParam());
+
         for (FrostProperties.DatastreamConfig datastreamConfig : datastreamConfigs) {
             try {
-                List<Observation> observations = frostClientService.fetchObservations(datastreamConfig);
-                List<Measurement> measurements = frostResponseHandlerService.handle(datastreamConfig, observations);
-                allMeasurements.addAll(measurements);
+                int pageIndex = 0;
+                int pagesMeasurements = 0;
+
+                while (true) {
+                    List<Observation> observationsPage = frostClientService.fetchObservationsPage(datastreamConfig, pageIndex);
+
+                    if (observationsPage.isEmpty()) {
+                        log.debug("End of pages for datastreamId={} at pageIndex={}", datastreamConfig.getDatastreamId(), pageIndex);
+                        break;
+                    }
+
+                    List<Measurement> measurements = frostResponseHandlerService.handle(datastreamConfig, observationsPage);
+                    if (!measurements.isEmpty()) {
+                        //measurementWriter.write(new org.springframework.batch.item.Chunk<>(measurements));
+                        totalMeasurements += measurements.size();
+                        pagesMeasurements += measurements.size();
+                    }
+
+                    log.debug(
+                            "FROST import page {} for datastreamId={}: {} observations -> {} measurements",
+                            pageIndex,
+                            datastreamConfig.getDatastreamId(),
+                            observationsPage.size(),
+                            measurements.size()
+                    );
+
+                    // Stop pagination if followPaginationLinks is disabled
+                    if (!frostProperties.isFollowPaginationLinks()) {
+                        log.debug("followPaginationLinks is disabled, stopping pagination for datastreamId={}", datastreamConfig.getDatastreamId());
+                        break;
+                    }
+
+                    // Move to next page
+                    pageIndex++;
+                }
+
+                log.info(
+                        "FROST import completed for datastreamId={}, city={}, pages={}, measurements={}",
+                        datastreamConfig.getDatastreamId(),
+                        datastreamConfig.getCity(),
+                        pageIndex,
+                        pagesMeasurements
+                );
                 successCount++;
             } catch (RuntimeException ex) {
                 failedCount++;
@@ -59,16 +103,42 @@ public class FrostImportTasklet implements Tasklet {
                 datastreamConfigs.size(),
                 successCount,
                 failedCount,
-                allMeasurements.size()
+                totalMeasurements
         );
-
-        if (!allMeasurements.isEmpty()) {
-            measurementWriter.deleteAndWrite(frostProperties.getIdParam(), allMeasurements);
-        } else {
-            log.warn("No FROST measurements collected, skipping deleteAndWrite.");
-        }
 
         return RepeatStatus.FINISHED;
     }
-}
 
+    private void logDatastreamsSummary(List<FrostProperties.DatastreamConfig> datastreamConfigs) {
+        log.info("[SUMMARY] Starting observation count for {} datastreamConfigs...", datastreamConfigs.size());
+        long summaryStart = System.nanoTime();
+        long grandTotal = 0;
+        int failed = 0;
+
+        for (int i = 0; i < datastreamConfigs.size(); i++) {
+            FrostProperties.DatastreamConfig config = datastreamConfigs.get(i);
+            long start = System.nanoTime();
+            Long count = frostClientService.countObservationsTotal(config);
+            long elapsedMs = (System.nanoTime() - start) / 1_000_000;
+
+            if (count != null) {
+                grandTotal += count;
+                log.info("[SUMMARY] [{}/{}] datastreamId={}, city={}, observedProperty={}, observations={}, elapsedMs={}",
+                        i + 1, datastreamConfigs.size(),
+                        config.getDatastreamId(),
+                        config.getCity(),
+                        config.getObservedProperty(),
+                        count,
+                        elapsedMs);
+            } else {
+                failed++;
+                log.warn("[SUMMARY] [{}/{}] datastreamId={} count not available",
+                        i + 1, datastreamConfigs.size(), config.getDatastreamId());
+            }
+        }
+
+        long totalElapsedMs = (System.nanoTime() - summaryStart) / 1_000_000;
+        log.info("[SUMMARY] Completed: datastreamConfigs={}, totalObservations={}, countFailed={}, totalSummaryMs={}",
+                datastreamConfigs.size(), grandTotal, failed, totalElapsedMs);
+    }
+}

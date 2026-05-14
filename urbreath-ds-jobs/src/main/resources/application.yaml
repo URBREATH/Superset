@@ -46,7 +46,7 @@ app:
         cron: "0/30 * * * * *"
     wms:
       enabled: false
-      cron: "0 0/20 * * * *"
+      cron: "0 0/5 * * * *"
     frost:
       config:
         enabled: false
@@ -62,8 +62,8 @@ wms:
     MADRID:
       bbox: '-413371.4489662349%2C4916429.659302536%2C-412148.4565136721%2C4917652.651755099'
       timezone: Europe%2FMadrid
-      i: 304
-      j: 135
+      i: 101
+      j: 367
     LEUVEN:
       bbox: '525886.7546020113%2C6599267.274028977%2C528332.739507137%2C6601713.258934103'
       timezone: Europe%2FBrussels
@@ -100,11 +100,11 @@ wms:
       FIC_THRESHOLD_TMAX_URB: 1001
       FIC_THRESHOLD_PRECIPITATION_24H_URB: 1003
       FIC_THRESHOLD_GUSTMAX_URB: 1004
-    #    LEUVEN:
-    #      FIC_THRESHOLD_TMIN_URB: LEUVEN_TMIN_SENSOR
-    #      FIC_THRESHOLD_TMAX_URB: LEUVEN_TMAX_SENSOR
-    #      FIC_THRESHOLD_PRECIPITATION_24H_URB: LEUVEN_PRECIP_SENSOR
-    #      FIC_THRESHOLD_GUSTMAX_URB: LEUVEN_WIND_SENSOR
+    LEUVEN:
+        FIC_THRESHOLD_TMIN_URB: 1014
+        FIC_THRESHOLD_TMAX_URB: 1013
+        FIC_THRESHOLD_PRECIPITATION_24H_URB: 1015
+        FIC_THRESHOLD_GUSTMAX_URB: 1016
     CLUJ:
       FIC_THRESHOLD_TMIN_URB: 1010
       FIC_THRESHOLD_TMAX_URB: 1009
@@ -120,21 +120,11 @@ frost:
   enabled: false
   base-url: https://frost-dev.urbreath.tech/FROST-Server/v1.1
   id-param: 19862
-  page-size: 500
+  page-size: 10
   follow-pagination-links: true
   order-by: phenomenonTime desc
   expand: Datastream($expand=Thing,Sensor,ObservedProperty)
-  datastreams: []
-  # Esempio:
-  # datastreams:
-  #   - datastream-id: 1
-  #     sensor-id: 1001
-  #     city: MADRID
-  #     description: Temperatura centralina Madrid
-  #     observed-property: temperature
-  #     measure-type: ACTUAL
-  #     source: FROST
-  #     filter: result ne null
+  filter: result ne null and phenomenonTime ge 2026-05-01T00:00:00Z
 
 logging:
   level:

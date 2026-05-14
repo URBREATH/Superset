@@ -3,6 +3,7 @@ package eu.urbreathdsjobs.client.frost;
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -19,11 +20,17 @@ public class FrostProperties {
     private boolean followPaginationLinks = true;
     private String orderBy = "phenomenonTime desc";
     private String expand = "Datastream($expand=Thing,Sensor,ObservedProperty)";
+    private String filter = "result ne null";
     private List<DatastreamConfig> datastreams = new ArrayList<>();
 
     public List<DatastreamConfig> getEnabledDatastreams() {
         return datastreams.stream()
                 .filter(DatastreamConfig::isEnabled)
+                .peek(config -> {
+                    if (!StringUtils.hasText(config.getFilter()) && StringUtils.hasText(filter)) {
+                        config.setFilter(filter);
+                    }
+                })
                 .toList();
     }
 

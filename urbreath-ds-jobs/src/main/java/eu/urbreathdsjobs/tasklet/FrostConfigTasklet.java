@@ -16,7 +16,6 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Component;
 
-import java.util.ArrayList;
 import java.util.List;
 
 @Component
@@ -33,15 +32,58 @@ public class FrostConfigTasklet implements Tasklet {
     @Override
     public RepeatStatus execute(@NonNull StepContribution contribution, @NonNull ChunkContext chunkContext) throws Exception {
         List<FrostProperties.DatastreamConfig> datastreamConfigs = frostClientService.getConfiguredDatastreams();
-        List<Measurement> allMeasurements = new ArrayList<>();
+        int totalMeasurements = 0;
         int successCount = 0;
         int failedCount = 0;
 
+        // Delete once at the beginning
+        //measurementWriter.deleteByIdParam(frostProperties.getIdParam());
+
         for (FrostProperties.DatastreamConfig datastreamConfig : datastreamConfigs) {
             try {
-                List<Observation> observations = frostClientService.fetchObservations(datastreamConfig);
-                List<Measurement> measurements = frostResponseHandlerService.handle(datastreamConfig, observations);
-                allMeasurements.addAll(measurements);
+                int pageIndex = 0;
+                int pagesMeasurements = 0;
+
+                while (true) {
+                    List<Observation> observationsPage = frostClientService.fetchObservationsPage(datastreamConfig, pageIndex);
+
+                    if (observationsPage.isEmpty()) {
+                        log.debug("End of pages for datastreamId={} at pageIndex={}", datastreamConfig.getDatastreamId(), pageIndex);
+                        break;
+                    }
+
+                    List<Measurement> measurements = frostResponseHandlerService.handle(datastreamConfig, observationsPage);
+                    if (!measurements.isEmpty()) {
+                        //measurementWriter.write(new org.springframework.batch.item.Chunk<>(measurements));
+                        totalMeasurements += measurements.size();
+                        pagesMeasurements += measurements.size();
+                    }
+
+                    log.debug(
+                            "FROST config page {} for datastreamId={}: {} observations -> {} measurements",
+                            pageIndex,
+                            datastreamConfig.getDatastreamId(),
+                            observationsPage.size(),
+                            measurements.size()
+                    );
+
+                    // Stop pagination if followPaginationLinks is disabled
+                    if (!frostProperties.isFollowPaginationLinks()) {
+                        log.debug("followPaginationLinks is disabled, stopping pagination for datastreamId={}", datastreamConfig.getDatastreamId());
+                        break;
+                    }
+
+                    // Move to next page
+                    pageIndex++;
+                }
+
+                log.info(
+                        "FROST config completed for datastreamId={}, city={}, pages={}, measurements={}",
+                        datastreamConfig.getDatastreamId(),
+                        datastreamConfig.getCity(),
+                        pageIndex,
+                        pagesMeasurements
+                );
                 successCount++;
             } catch (RuntimeException ex) {
                 failedCount++;
@@ -59,14 +101,8 @@ public class FrostConfigTasklet implements Tasklet {
                 datastreamConfigs.size(),
                 successCount,
                 failedCount,
-                allMeasurements.size()
+                totalMeasurements
         );
-
-        if (!allMeasurements.isEmpty()) {
-            measurementWriter.deleteAndWrite(frostProperties.getIdParam(), allMeasurements);
-        } else {
-            log.warn("No FROST config measurements collected, skipping deleteAndWrite.");
-        }
 
         return RepeatStatus.FINISHED;
     }
