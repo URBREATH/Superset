@@ -20,6 +20,7 @@ import cn.hutool.core.util.IdUtil;
 import eu.urbreathdsjobs.model.City;
 import eu.urbreathdsjobs.model.Parameter;
 import eu.urbreathdsjobs.model.Sensor;
+import eu.urbreathdsjobs.reader.CityReader;
 import eu.urbreathdsjobs.reader.LocationReader;
 import eu.urbreathdsjobs.reader.ParameterReader;
 import lombok.RequiredArgsConstructor;
@@ -52,6 +53,7 @@ public class SensorWriter {
             """;
 
     private final JdbcTemplate jdbcTemplate;
+    private final CityReader cityReader;
     private final ParameterReader parameterReader;
     private final LocationReader locationReader;
     private final ObjectMapper mapper = new ObjectMapper();
@@ -103,13 +105,20 @@ public class SensorWriter {
         Objects.requireNonNull(parameter, "parameter is required");
         Objects.requireNonNull(location, "location is required");
         Objects.requireNonNull(sensor, "sensor is required");
-        Objects.requireNonNull(city, "city is required");
 
-        Objects.requireNonNull(city.getIdCity(), "city.idCity is required");
-        Objects.requireNonNull(city.getIdCountry(), "city.idCountry is required");
+        String cityName = city != null ? city.getName() : null;
+        City resolvedCity = cityReader.findByNameOrFallback(cityName);
+        if (resolvedCity == null) {
+            throw new IllegalStateException("Unable to resolve city from DB and fallback 'n/a'");
+        }
 
-        location.setIdCity(city.getIdCity());
-        location.setIdCountry(city.getIdCountry());
+        location.setIdCity(resolvedCity.getIdCity());
+        location.setIdCountry(resolvedCity.getIdCountry());
+        if (city != null) {
+            city.setIdCity(resolvedCity.getIdCity());
+            city.setIdCountry(resolvedCity.getIdCountry());
+            city.setName(resolvedCity.getName());
+        }
 
         Long existingParameterId = parameterReader.findIdByNameUnitsDisplayName(
                 parameter.getName(),

@@ -4,18 +4,20 @@ import ch.qos.logback.core.net.SyslogOutputStream;
 import de.fraunhofer.iosb.ilt.sta.dao.BaseDao;
 import de.fraunhofer.iosb.ilt.sta.model.Datastream;
 import de.fraunhofer.iosb.ilt.sta.model.Id;
-import de.fraunhofer.iosb.ilt.sta.model.Observation;
 import de.fraunhofer.iosb.ilt.sta.model.Sensor;
 import eu.urbreathdsjobs.client.frost.FrostClientService;
-import eu.urbreathdsjobs.client.frost.FrostProperties;
-import eu.urbreathdsjobs.client.frost.FrostResponseHandlerService;
 import eu.urbreathdsjobs.common.Constants;
-import eu.urbreathdsjobs.model.Measurement;
+import eu.urbreathdsjobs.model.City;
+import eu.urbreathdsjobs.model.Location;
 import eu.urbreathdsjobs.model.Parameter;
+import eu.urbreathdsjobs.common.SensorAttributeEnum;
 import eu.urbreathdsjobs.reader.SensorReader;
-import eu.urbreathdsjobs.writer.MeasurementWriter;
+import eu.urbreathdsjobs.writer.SensorWriter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.geojson.GeoJsonObject;
+import org.geojson.LngLatAlt;
+import org.geojson.Point;
 import org.springframework.batch.core.StepContribution;
 import org.springframework.batch.core.scope.context.ChunkContext;
 import org.springframework.batch.core.step.tasklet.Tasklet;
@@ -25,6 +27,7 @@ import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
+import java.util.Map;
 
 @Component
 @Slf4j
@@ -33,10 +36,8 @@ import java.util.List;
 public class FrostConfigTasklet implements Tasklet {
 
     private final FrostClientService frostClientService;
-    private final FrostResponseHandlerService frostResponseHandlerService;
-    private final MeasurementWriter measurementWriter;
-    private final FrostProperties frostProperties;
     private final SensorReader sensorReader;
+    private final SensorWriter sensorWriter;
 
     @Override
     public RepeatStatus execute(@NonNull StepContribution contribution, @NonNull ChunkContext chunkContext) throws Exception {
@@ -73,9 +74,12 @@ public class FrostConfigTasklet implements Tasklet {
                         continue;
                     }
 
+
                     Parameter parameter = getParameter(datastream);
-
-
+                    Location location = getLocation(datastream);
+                    City city = getCity(datastream);
+                    eu.urbreathdsjobs.model.Sensor urSensor = getSensor(idSensor, parameter, location);
+                    sensorWriter.insertSensor(parameter,location, urSensor, city );
                 }
 
                 log.debug("Fetched {} datastreams for sensorId={}", datastreams.size(), sensorId);
@@ -89,6 +93,23 @@ public class FrostConfigTasklet implements Tasklet {
 
 
         return RepeatStatus.FINISHED;
+    }
+
+    private Location getLocation(Datastream datastream) {
+        Location location = new Location();
+
+        GeoJsonObject observedArea = datastream.getObservedArea();
+        if (observedArea instanceof Point point) {
+            LngLatAlt coordinates = point.getCoordinates();
+            if (coordinates != null) {
+                // GeoJSON coordinates order: [longitude, latitude]
+                location.setLongitude(coordinates.getLongitude());
+                location.setLatitude(coordinates.getLatitude());
+            }
+
+        }
+
+        return location;
     }
 
     private Parameter getParameter(Datastream datastream) {
@@ -109,4 +130,40 @@ public class FrostConfigTasklet implements Tasklet {
 
         return parameter;
     }
+
+    private City getCity(Datastream datastream) {
+        Object properties = datastream.getProperties();
+        if (!(properties instanceof Map<?, ?> propertiesMap)) {
+            return null;
+        }
+
+        Object pilot = propertiesMap.get("pilot");
+        if (pilot == null) {
+            return null;
+        }
+
+        String cityName = pilot.toString().trim();
+        if (cityName.isEmpty()) {
+            return null;
+        }
+
+        City city = new City();
+        city.setName(cityName);
+        return city;
+    }
+
+    private eu.urbreathdsjobs.model.Sensor getSensor(Long idSensor, Parameter parameter, Location location) {
+        Sensor sensor = new Sensor();
+        eu.urbreathdsjobs.model.Sensor urSensor = new eu.urbreathdsjobs.model.Sensor();
+
+        urSensor.setLatitude(location.getLatitude());
+        urSensor.setLongitude(location.getLongitude());
+        urSensor.setName(parameter.getName());
+        urSensor.setDisplayName(parameter.getDisplayName());
+        urSensor.setMetadataAttribute(SensorAttributeEnum.SENSOR_ID_EXTERNAL, String.valueOf(idSensor));
+
+        return urSensor;
+    }
+
+
 }
