@@ -117,7 +117,8 @@ wms:
       FIC_THRESHOLD_GUSTMAX_URB: 1008
 
 frost:
-  enabled: false
+  enabled: true
+  dry-run-config: true
   base-url: https://frost-dev.urbreath.tech/FROST-Server/v1.1
   id-param: 19862
   page-size: 10

@@ -26,7 +26,6 @@ import java.util.function.IntFunction;
 @Service
 @Slf4j
 @RequiredArgsConstructor
-@ConditionalOnProperty(prefix = "frost", name = "enabled", havingValue = "true")
 public class FrostClientService {
 
     private final SensorThingsService sensorThingsService;

@@ -23,6 +23,7 @@ import org.springframework.batch.core.scope.context.ChunkContext;
 import org.springframework.batch.core.step.tasklet.Tasklet;
 import org.springframework.batch.repeat.RepeatStatus;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Component;
 
@@ -32,67 +33,100 @@ import java.util.Map;
 @Component
 @Slf4j
 @RequiredArgsConstructor
-@ConditionalOnProperty(prefix = "frost", name = "enabled", havingValue = "true")
 public class FrostConfigTasklet implements Tasklet {
 
     private final FrostClientService frostClientService;
     private final SensorReader sensorReader;
     private final SensorWriter sensorWriter;
 
+    @Value("${frost.dry-run-config:false}")
+    private boolean dryRun;
+
     @Override
     public RepeatStatus execute(@NonNull StepContribution contribution, @NonNull ChunkContext chunkContext) throws Exception {
+        int totalPages = frostClientService.countSensorPages();
+        int totalDatastreamsProcessed = 0;
+        int totalDatastreamsSkipped = 0;
+        int totalDatastreamsInserted = 0;
 
-        int sensorPage = frostClientService.countSensorPages();
-        for ( int i = 0; i < sensorPage; i++) {
-            List<Sensor> sensors = frostClientService.fetchSensorsPage(i);
-            
-            for ( Sensor sensor : sensors ){
+        for (int page = 0; page < totalPages; page++) {
+            List<Sensor> sensors = frostClientService.fetchSensorsPage(page);
+            log.debug("Fetched sensor page {}/{}: {} sensors", page + 1, totalPages, sensors.size());
+
+            for (Sensor sensor : sensors) {
                 Long sensorId = frostClientService.idValue(sensor.getId());
                 if (sensorId == null) {
                     log.warn("Skipping sensor because id is missing");
                     continue;
                 }
+
                 List<Datastream> datastreams = frostClientService.fetchDatastreamsForSensor(sensorId);
+                log.debug("Processing {} datastreams for sensorId={}", datastreams.size(), sensorId);
 
-                for (Datastream datastream : datastreams){
-                    Id id = datastream.getId();
-                    Long idSensor = frostClientService.idValue(id);
-
-                    String unitSymbol = datastream.getUnitOfMeasurement() != null
-                        ? datastream.getUnitOfMeasurement().getSymbol()
-                        : "N/A";
-
-                    //1. unitSymbol non in lista  →  skip
-                    if (!Constants.ACCEPTED_UNIT_SYMBOLS.contains(unitSymbol)) {
-                        log.debug("Skipping datastream id={} - unitSymbol='{}' not in accepted list", id, unitSymbol);
-                        continue;
+                for (Datastream datastream : datastreams) {
+                    totalDatastreamsProcessed++;
+                    
+                    if (!processDatastream(datastream)) {
+                        totalDatastreamsSkipped++;
+                    } else {
+                        totalDatastreamsInserted++;
                     }
-
-                    //2. sensore già esiste nel DB (SENSOR_ID_EXTERNAL = idSensor)  →  skip
-                    if (sensorReader.sensorExists(String.valueOf(idSensor))) {
-                        log.debug("Skipping datastream id={} - sensor with SENSOR_ID_EXTERNAL={} already exists", id, idSensor);
-                        continue;
-                    }
-
-
-                    Parameter parameter = getParameter(datastream);
-                    Location location = getLocation(datastream);
-                    City city = getCity(datastream);
-                    eu.urbreathdsjobs.model.Sensor urSensor = getSensor(idSensor, parameter, location);
-                    sensorWriter.insertSensor(parameter,location, urSensor, city );
                 }
-
-                log.debug("Fetched {} datastreams for sensorId={}", datastreams.size(), sensorId);
             }
-
-
-
-            log.debug("Fetched sensor page {}/{}: {} sensors", i, sensorPage, sensors.size());
         }
 
-
-
+        log.info("FROST config job completed: processed={}, inserted={}, skipped={}",
+                totalDatastreamsProcessed, totalDatastreamsInserted, totalDatastreamsSkipped);
         return RepeatStatus.FINISHED;
+    }
+
+    private boolean processDatastream(Datastream datastream) {
+        Id id = datastream.getId();
+        Long idSensor = frostClientService.idValue(id);
+
+        String unitSymbol = extractUnitSymbol(datastream);
+
+        // 1. Valida unitSymbol
+        if (!Constants.ACCEPTED_UNIT_SYMBOLS.contains(unitSymbol)) {
+            log.debug("Skipping datastream id={} - unitSymbol='{}' not in accepted list", id, unitSymbol);
+            return false;
+        }
+
+        // 2. Valida sensore non esiste già
+        if (sensorReader.sensorExists(String.valueOf(idSensor))) {
+            log.debug("Skipping datastream id={} - sensor with SENSOR_ID_EXTERNAL={} already exists", id, idSensor);
+            return false;
+        }
+
+        // 3. Elabora e inserisci
+        Parameter parameter = getParameter(datastream);
+        Location location = getLocation(datastream);
+        City city = getCity(datastream);
+        eu.urbreathdsjobs.model.Sensor urSensor = getSensor(idSensor, parameter, location);
+
+        if (dryRun) {
+            log.info("[DRY-RUN] Would insert: Parameter(name={}, units={}, displayName={}), Location(lat={}, lon={}), City(name={}), Sensor(name={}, displayName={}, metadata.SENSOR_ID_EXTERNAL={})",
+                parameter.getName(), parameter.getUnits(), parameter.getDisplayName(),
+                location.getLatitude(), location.getLongitude(),
+                city != null ? city.getName() : "null",
+                urSensor.getName(), urSensor.getDisplayName(), idSensor);
+        } else {
+            if (city == null) {
+                log.warn("City is null for datastream id={}, using fallback 'n/a' will be applied during insert", id);
+            }
+            sensorWriter.insertSensor(parameter, location, urSensor, city);
+            log.info("Successfully inserted datastream id={} - Sensor(name={}, idParam={}, idLocation={})",
+                id, urSensor.getName(), urSensor.getIdParam(), urSensor.getIdLocation());
+        }
+        
+        return true;
+    }
+
+    private String extractUnitSymbol(Datastream datastream) {
+        if (datastream.getUnitOfMeasurement() != null) {
+            return datastream.getUnitOfMeasurement().getSymbol();
+        }
+        return "N/A";
     }
 
     private Location getLocation(Datastream datastream) {
@@ -153,7 +187,6 @@ public class FrostConfigTasklet implements Tasklet {
     }
 
     private eu.urbreathdsjobs.model.Sensor getSensor(Long idSensor, Parameter parameter, Location location) {
-        Sensor sensor = new Sensor();
         eu.urbreathdsjobs.model.Sensor urSensor = new eu.urbreathdsjobs.model.Sensor();
 
         urSensor.setLatitude(location.getLatitude());

@@ -46,7 +46,7 @@ app:
         cron: "0/30 * * * * *"
     wms:
       enabled: false
-      cron: "0 0/20 * * * *"
+      cron: "0 0/5 * * * *"
     frost:
       config:
         enabled: false
@@ -62,13 +62,13 @@ wms:
     MADRID:
       bbox: '-413371.4489662349%2C4916429.659302536%2C-412148.4565136721%2C4917652.651755099'
       timezone: Europe%2FMadrid
-      i: 304
-      j: 135
+      i: 101
+      j: 367
     LEUVEN:
       bbox: '525886.7546020113%2C6599267.274028977%2C528332.739507137%2C6601713.258934103'
       timezone: Europe%2FBrussels
-      i: 101
-      j: 367
+      i: 304
+      j: 135
     CLUJ:
       bbox: '2622095.8182946853%2C5899715.591163045%2C2631879.757915188%2C5909499.530783547'
       timezone: Europe%2FBucharest
@@ -100,11 +100,11 @@ wms:
       FIC_THRESHOLD_TMAX_URB: 1001
       FIC_THRESHOLD_PRECIPITATION_24H_URB: 1003
       FIC_THRESHOLD_GUSTMAX_URB: 1004
-      LEUVEN:
-        FIC_THRESHOLD_TMIN_URB: 1014
-        FIC_THRESHOLD_TMAX_URB: 1013
-        FIC_THRESHOLD_PRECIPITATION_24H_URB: 1015
-        FIC_THRESHOLD_GUSTMAX_URB: 1016
+    LEUVEN:
+      FIC_THRESHOLD_TMIN_URB: 1014
+      FIC_THRESHOLD_TMAX_URB: 1013
+      FIC_THRESHOLD_PRECIPITATION_24H_URB: 1015
+      FIC_THRESHOLD_GUSTMAX_URB: 1016
     CLUJ:
       FIC_THRESHOLD_TMIN_URB: 1010
       FIC_THRESHOLD_TMAX_URB: 1009
@@ -118,6 +118,7 @@ wms:
 
 frost:
   enabled: true
+  dry-run-config: true
   base-url: https://frost-dev.urbreath.tech/FROST-Server/v1.1
   id-param: 19862
   page-size: 10
