@@ -81,9 +81,6 @@ class FrostImportTaskletTest {
 
         assertEquals(RepeatStatus.FINISHED, status);
 
-        // Verify delete called once at the beginning
-        verify(measurementWriter, times(1)).deleteByIdParam(19862L);
-
         // Verify write called 3 times (one for each page)
         verify(measurementWriter, times(3)).write(any());
 

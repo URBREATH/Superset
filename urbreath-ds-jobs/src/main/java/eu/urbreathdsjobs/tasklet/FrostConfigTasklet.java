@@ -1,10 +1,18 @@
 package eu.urbreathdsjobs.tasklet;
 
+import ch.qos.logback.core.net.SyslogOutputStream;
+import de.fraunhofer.iosb.ilt.sta.dao.BaseDao;
+import de.fraunhofer.iosb.ilt.sta.model.Datastream;
+import de.fraunhofer.iosb.ilt.sta.model.Id;
 import de.fraunhofer.iosb.ilt.sta.model.Observation;
+import de.fraunhofer.iosb.ilt.sta.model.Sensor;
 import eu.urbreathdsjobs.client.frost.FrostClientService;
 import eu.urbreathdsjobs.client.frost.FrostProperties;
 import eu.urbreathdsjobs.client.frost.FrostResponseHandlerService;
+import eu.urbreathdsjobs.common.Constants;
 import eu.urbreathdsjobs.model.Measurement;
+import eu.urbreathdsjobs.model.Parameter;
+import eu.urbreathdsjobs.reader.SensorReader;
 import eu.urbreathdsjobs.writer.MeasurementWriter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -28,84 +36,77 @@ public class FrostConfigTasklet implements Tasklet {
     private final FrostResponseHandlerService frostResponseHandlerService;
     private final MeasurementWriter measurementWriter;
     private final FrostProperties frostProperties;
+    private final SensorReader sensorReader;
 
     @Override
     public RepeatStatus execute(@NonNull StepContribution contribution, @NonNull ChunkContext chunkContext) throws Exception {
-        List<FrostProperties.DatastreamConfig> datastreamConfigs = frostClientService.getConfiguredDatastreams();
-        int totalMeasurements = 0;
-        int successCount = 0;
-        int failedCount = 0;
 
-        // Delete once at the beginning
-        //measurementWriter.deleteByIdParam(frostProperties.getIdParam());
+        int sensorPage = frostClientService.countSensorPages();
+        for ( int i = 0; i < sensorPage; i++) {
+            List<Sensor> sensors = frostClientService.fetchSensorsPage(i);
+            
+            for ( Sensor sensor : sensors ){
+                Long sensorId = frostClientService.idValue(sensor.getId());
+                if (sensorId == null) {
+                    log.warn("Skipping sensor because id is missing");
+                    continue;
+                }
+                List<Datastream> datastreams = frostClientService.fetchDatastreamsForSensor(sensorId);
 
-        for (FrostProperties.DatastreamConfig datastreamConfig : datastreamConfigs) {
-            try {
-                int pageIndex = 0;
-                int pagesMeasurements = 0;
+                for (Datastream datastream : datastreams){
+                    Id id = datastream.getId();
+                    Long idSensor = frostClientService.idValue(id);
 
-                while (true) {
-                    List<Observation> observationsPage = frostClientService.fetchObservationsPage(datastreamConfig, pageIndex);
+                    String unitSymbol = datastream.getUnitOfMeasurement() != null
+                        ? datastream.getUnitOfMeasurement().getSymbol()
+                        : "N/A";
 
-                    if (observationsPage.isEmpty()) {
-                        log.debug("End of pages for datastreamId={} at pageIndex={}", datastreamConfig.getDatastreamId(), pageIndex);
-                        break;
+                    //1. unitSymbol non in lista  →  skip
+                    if (!Constants.ACCEPTED_UNIT_SYMBOLS.contains(unitSymbol)) {
+                        log.debug("Skipping datastream id={} - unitSymbol='{}' not in accepted list", id, unitSymbol);
+                        continue;
                     }
 
-                    List<Measurement> measurements = frostResponseHandlerService.handle(datastreamConfig, observationsPage);
-                    if (!measurements.isEmpty()) {
-                        //measurementWriter.write(new org.springframework.batch.item.Chunk<>(measurements));
-                        totalMeasurements += measurements.size();
-                        pagesMeasurements += measurements.size();
+                    //2. sensore già esiste nel DB (SENSOR_ID_EXTERNAL = idSensor)  →  skip
+                    if (sensorReader.sensorExists(String.valueOf(idSensor))) {
+                        log.debug("Skipping datastream id={} - sensor with SENSOR_ID_EXTERNAL={} already exists", id, idSensor);
+                        continue;
                     }
 
-                    log.debug(
-                            "FROST config page {} for datastreamId={}: {} observations -> {} measurements",
-                            pageIndex,
-                            datastreamConfig.getDatastreamId(),
-                            observationsPage.size(),
-                            measurements.size()
-                    );
+                    Parameter parameter = getParameter(datastream);
 
-                    // Stop pagination if followPaginationLinks is disabled
-                    if (!frostProperties.isFollowPaginationLinks()) {
-                        log.debug("followPaginationLinks is disabled, stopping pagination for datastreamId={}", datastreamConfig.getDatastreamId());
-                        break;
-                    }
 
-                    // Move to next page
-                    pageIndex++;
                 }
 
-                log.info(
-                        "FROST config completed for datastreamId={}, city={}, pages={}, measurements={}",
-                        datastreamConfig.getDatastreamId(),
-                        datastreamConfig.getCity(),
-                        pageIndex,
-                        pagesMeasurements
-                );
-                successCount++;
-            } catch (RuntimeException ex) {
-                failedCount++;
-                log.warn(
-                        "FROST config failed for datastreamId={}, city={}, cause={}",
-                        datastreamConfig.getDatastreamId(),
-                        datastreamConfig.getCity(),
-                        ex.getMessage()
-                );
+                log.debug("Fetched {} datastreams for sensorId={}", datastreams.size(), sensorId);
             }
+
+
+
+            log.debug("Fetched sensor page {}/{}: {} sensors", i, sensorPage, sensors.size());
         }
 
-        log.info(
-                "FROST config completed. configuredDatastreams={}, success={}, failed={}, totalMeasurements={}",
-                datastreamConfigs.size(),
-                successCount,
-                failedCount,
-                totalMeasurements
-        );
+
 
         return RepeatStatus.FINISHED;
     }
+
+    private Parameter getParameter(Datastream datastream) {
+        String description = datastream.getDescription() != null
+            ? datastream.getName()
+            : "N/A";
+        String unitName = datastream.getUnitOfMeasurement() != null
+            ? datastream.getUnitOfMeasurement().getName()
+            : "N/A";
+
+        String nameFromDescription = description.split("\\s+")[0];
+
+        Parameter parameter = new Parameter();
+        parameter.setName(nameFromDescription);
+        parameter.setUnits(datastream.getUnitOfMeasurement().getSymbol());
+        parameter.setDisplayName(unitName);
+        parameter.setDescription(description);
+
+        return parameter;
+    }
 }
-
-

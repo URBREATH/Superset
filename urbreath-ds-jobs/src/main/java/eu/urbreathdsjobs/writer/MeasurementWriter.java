@@ -64,17 +64,6 @@ public class MeasurementWriter implements ItemWriter<Measurement> {
 
     private static final int CHUNK_SIZE = 500;
 
-    @Transactional
-    public void deleteAndWrite(Long idParam, List<Measurement> measurements) throws Exception {
-        deleteByIdParam(idParam);
-        int total = measurements.size();
-        for (int i = 0; i < total; i += CHUNK_SIZE) {
-            List<Measurement> chunk = measurements.subList(i, Math.min(i + CHUNK_SIZE, total));
-            write(new Chunk<>(chunk));
-            log.debug("Written chunk [{}-{}] of {}", i, i + chunk.size(), total);
-        }
-        log.info("deleteAndWrite completed for id_param={}, inserted={}", idParam, total);
-    }
 
     @Transactional
     public void deleteAndWriteBySensorIds(List<Long> sensorIds, List<Measurement> measurements) throws Exception {

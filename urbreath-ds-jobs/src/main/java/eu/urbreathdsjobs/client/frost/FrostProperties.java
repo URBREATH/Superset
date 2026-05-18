@@ -13,6 +13,8 @@ import java.util.List;
 @Data
 public class FrostProperties {
 
+    // TUTTE le proprietà vengono lette dal file .yaml
+    // in mancanza di tali proprietà questi sono i valori di DEAFULT
     private boolean enabled;
     private String baseUrl;
     private Long idParam;

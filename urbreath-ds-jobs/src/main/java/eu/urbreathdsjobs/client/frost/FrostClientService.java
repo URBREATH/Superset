@@ -62,6 +62,7 @@ public class FrostClientService {
     public Sensor findSensor(Long sensorId) {
         try {
             return sensorThingsService.sensors().find(sensorId);
+
         } catch (ServiceFailureException ex) {
             throw new RuntimeException("Unable to load FROST sensor " + sensorId, ex);
         }
@@ -274,6 +275,85 @@ public class FrostClientService {
         return countPages(this::fetchFeaturesOfInterestPage);
     }
 
+    public List<Datastream> fetchDatastreamsForSensorPage(Long sensorId, int pageIndex) {
+        validatePageIndex(pageIndex);
+        if (sensorId == null) {
+            throw new IllegalArgumentException("sensorId must not be null");
+        }
+
+        int pageSize = resolvePageSize();
+        try {
+            Sensor sensor = sensorThingsService.sensors().find(sensorId);
+            if (sensor == null) {
+                throw new RuntimeException("Sensor not found with id: " + sensorId);
+            }
+
+            Query<Datastream> query = sensor.datastreams().query();
+            query.top(pageSize);
+            query.skip(Math.multiplyExact(pageIndex, pageSize));
+
+            EntityList<Datastream> entityList = query.list();
+            List<Datastream> datastreams = toList(entityList.iterator());
+
+            log.info(
+                    "Fetched page {} (size={}) with {} FROST datastreams for sensorId={}",
+                    pageIndex,
+                    pageSize,
+                    datastreams.size(),
+                    sensorId
+            );
+            return datastreams;
+        } catch (ServiceFailureException ex) {
+            throw new RuntimeException(
+                    "Unable to fetch FROST datastream page " + pageIndex + " for sensor " + sensorId,
+                    ex
+            );
+        }
+    }
+
+    public int countDatastreamsForSensorPages(Long sensorId) {
+        if (sensorId == null) {
+            throw new IllegalArgumentException("sensorId must not be null");
+        }
+        return countPages(pageIndex -> fetchDatastreamsForSensorPage(sensorId, pageIndex));
+    }
+
+    public List<Datastream> fetchDatastreamsForSensor(Long sensorId) {
+        if (sensorId == null) {
+            throw new IllegalArgumentException("sensorId must not be null");
+        }
+
+        try {
+            Sensor sensor = sensorThingsService.sensors().find(sensorId);
+            if (sensor == null) {
+                throw new RuntimeException("Sensor not found with id: " + sensorId);
+            }
+
+            Query<Datastream> query = sensor.datastreams().query();
+            if (frostProperties.getPageSize() != null && frostProperties.getPageSize() > 0) {
+                query.top(frostProperties.getPageSize());
+            }
+
+            Iterator<Datastream> iterator = frostProperties.isFollowPaginationLinks()
+                    ? query.list().fullIterator()
+                    : query.list().iterator();
+            List<Datastream> datastreams = toList(iterator);
+
+            log.info(
+                    "Fetched {} FROST datastreams for sensorId={}, followPaginationLinks={}",
+                    datastreams.size(),
+                    sensorId,
+                    frostProperties.isFollowPaginationLinks()
+            );
+            return datastreams;
+        } catch (ServiceFailureException ex) {
+            throw new RuntimeException(
+                    "Unable to fetch FROST datastreams for sensor " + sensorId,
+                    ex
+            );
+        }
+    }
+
     private Query<Observation> baseObservationQuery(FrostProperties.DatastreamConfig datastreamConfig) {
         ObservationDao observationDao = sensorThingsService.observations();
         Query<Observation> query = observationDao.query();
@@ -419,16 +499,16 @@ public class FrostClientService {
         return config;
     }
 
-    private Long idValue(Id id) {
-        if (id == null || id.getValue() == null) {
-            return null;
-        }
-        Object value = id.getValue();
-        if (value instanceof Number number) {
-            return number.longValue();
-        }
-        return Long.valueOf(value.toString());
-    }
+     public Long idValue(Id id) {
+         if (id == null || id.getValue() == null) {
+             return null;
+         }
+         Object value = id.getValue();
+         if (value instanceof Number number) {
+             return number.longValue();
+         }
+         return Long.valueOf(value.toString());
+     }
 
     private <T> List<T> toList(Iterator<T> iterator) {
         List<T> observations = new ArrayList<>();

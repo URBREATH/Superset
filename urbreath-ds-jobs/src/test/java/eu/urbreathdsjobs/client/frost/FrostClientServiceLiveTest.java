@@ -61,6 +61,10 @@ class FrostClientServiceLiveTest {
     @Qualifier("frostImportJob")
     private Job frostImportJob;
 
+    @Autowired(required = false)
+    @Qualifier("frostConfigJob")
+    private Job frostConfigJob;
+
     @Test
     @DisplayName("Should query at least one datastream with real HTTP calls")
     void shouldQueryDatastreamsWithRealHttpCalls() throws Exception {
@@ -244,6 +248,37 @@ class FrostClientServiceLiveTest {
 
         long executionTimeMs = (System.nanoTime() - executionStart) / 1_000_000;
         log.info("[LIVE] frostImportJob REAL execution completed in {} ms", executionTimeMs);
+        log.info("[LIVE] Job status: {}", execution.getStatus());
+
+        assertEquals(BatchStatus.COMPLETED, execution.getStatus());
+    }
+
+    @Test
+    @DisplayName("Should execute FrostConfigTasklet end-to-end with real FROST server (paginated flow)")
+    void shouldExecuteFrostConfigTaskletEndToEnd() throws Exception {
+        log.info("[LIVE] Starting frostConfigJob end-to-end execution test with REAL data");
+
+        assumeTrue(jobLauncher != null && frostConfigJob != null && frostProperties != null,
+                "FROST components not autowired (likely disabled in test config)");
+
+        log.info("[LIVE] FROST Configuration:");
+        log.info("[LIVE]   enabled: {}", frostProperties.isEnabled());
+        log.info("[LIVE]   base-url: {}", frostProperties.getBaseUrl());
+        log.info("[LIVE]   id-param: {}", frostProperties.getIdParam());
+        log.info("[LIVE]   page-size: {}", frostProperties.getPageSize());
+        log.info("[LIVE]   follow-pagination-links: {}", frostProperties.isFollowPaginationLinks());
+
+        long executionStart = System.nanoTime();
+        log.info("[LIVE] Executing frostConfigJob with real datastreams and observations...");
+
+        JobParameters params = new JobParametersBuilder()
+                .addLong("batch.id", 6L)
+                .addLong("run.id", System.currentTimeMillis())
+                .toJobParameters();
+        JobExecution execution = jobLauncher.run(frostConfigJob, params);
+
+        long executionTimeMs = (System.nanoTime() - executionStart) / 1_000_000;
+        log.info("[LIVE] frostConfigJob REAL execution completed in {} ms", executionTimeMs);
         log.info("[LIVE] Job status: {}", execution.getStatus());
 
         assertEquals(BatchStatus.COMPLETED, execution.getStatus());

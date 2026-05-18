@@ -124,7 +124,7 @@ frost:
   follow-pagination-links: true
   order-by: phenomenonTime desc
   expand: Datastream($expand=Thing,Sensor,ObservedProperty)
-  filter: result ne null and phenomenonTime ge 2026-05-01T00:00:00Z
+  filter: result ne null
 
 logging:
   level:
