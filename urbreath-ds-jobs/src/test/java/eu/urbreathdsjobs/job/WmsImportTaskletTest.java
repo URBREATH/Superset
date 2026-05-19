@@ -2,8 +2,8 @@ package eu.urbreathdsjobs.job;
 
 import eu.urbreathdsjobs.client.wms.*;
 import eu.urbreathdsjobs.model.Measurement;
+import eu.urbreathdsjobs.service.MeasurementPersistenceService;
 import eu.urbreathdsjobs.tasklet.WmsImportTasklet;
-import eu.urbreathdsjobs.writer.MeasurementWriter;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -28,7 +28,7 @@ class WmsImportTaskletTest {
         WmsUrlService wmsUrlService = Mockito.mock(WmsUrlService.class);
         WmsHttpClientService wmsHttpClientService = Mockito.mock(WmsHttpClientService.class);
         WmsResponseHandlerService handlerService = Mockito.mock(WmsResponseHandlerService.class);
-        MeasurementWriter measurementWriter = Mockito.mock(MeasurementWriter.class);
+        MeasurementPersistenceService measurementPersistenceService = Mockito.mock(MeasurementPersistenceService.class);
         WmsProperties wmsProperties = Mockito.mock(WmsProperties.class);
 
         when(wmsProperties.getSensors()).thenReturn(Map.of(
@@ -36,7 +36,7 @@ class WmsImportTaskletTest {
         ));
 
         WmsImportTasklet tasklet = new WmsImportTasklet(
-                wmsUrlService, wmsHttpClientService, handlerService, measurementWriter, wmsProperties);
+                wmsUrlService, wmsHttpClientService, handlerService, measurementPersistenceService, wmsProperties);
 
         WmsRequest request1 = WmsRequest.builder().city(City.MADRID).callType("wind").url("http://example/1").build();
         WmsRequest request2 = WmsRequest.builder().city(City.LEUVEN).callType("precipitation").url("http://example/2").build();
@@ -57,7 +57,7 @@ class WmsImportTaskletTest {
         assertEquals(RepeatStatus.FINISHED, status);
         verify(wmsHttpClientService, times(2)).fetch(any(WmsRequest.class));
         verify(handlerService, times(2)).handle(any(WmsCallResult.class));
-        verify(measurementWriter, times(1)).deleteAndWriteBySensorIds(anyList(), anyList());
+        verify(measurementPersistenceService, times(1)).deleteAndWriteBySensorIds(anyList(), anyList());
     }
 }
 
