@@ -1,12 +1,6 @@
 package eu.urbreathdsjobs.job;
 
-import eu.urbreathdsjobs.client.wms.City;
-import eu.urbreathdsjobs.client.wms.WmsCallResult;
-import eu.urbreathdsjobs.client.wms.WmsHttpClientService;
-import eu.urbreathdsjobs.client.wms.WmsProperties;
-import eu.urbreathdsjobs.client.wms.WmsRequest;
-import eu.urbreathdsjobs.client.wms.WmsResponseHandlerService;
-import eu.urbreathdsjobs.client.wms.WmsUrlService;
+import eu.urbreathdsjobs.client.wms.*;
 import eu.urbreathdsjobs.model.Measurement;
 import eu.urbreathdsjobs.tasklet.WmsImportTasklet;
 import eu.urbreathdsjobs.writer.MeasurementWriter;
@@ -23,9 +17,7 @@ import java.util.Map;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 @DisplayName("WMS import tasklet tests")
 class WmsImportTaskletTest {

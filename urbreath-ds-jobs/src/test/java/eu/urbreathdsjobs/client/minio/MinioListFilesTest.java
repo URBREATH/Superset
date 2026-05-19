@@ -1,20 +1,19 @@
 package eu.urbreathdsjobs.client.minio;
 
-import java.net.URI;
-import java.util.ArrayList;
-import java.util.List;
-
+import eu.urbreathdsjobs.launcher.App;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
-
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.ListObjectsV2Request;
 import software.amazon.awssdk.services.s3.model.ListObjectsV2Response;
-import eu.urbreathdsjobs.launcher.App;
+
+import java.net.URI;
+import java.util.ArrayList;
+import java.util.List;
 
 @SpringBootTest(classes = App.class)
 public class MinioListFilesTest {

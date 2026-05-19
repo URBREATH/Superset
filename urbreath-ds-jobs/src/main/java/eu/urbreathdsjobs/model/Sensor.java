@@ -1,10 +1,10 @@
 package eu.urbreathdsjobs.model;
 
-import java.util.HashMap;
-import java.util.Map;
-
 import eu.urbreathdsjobs.common.SensorAttributeEnum;
 import lombok.Data;
+
+import java.util.HashMap;
+import java.util.Map;
 
 @Data
 public class Sensor {

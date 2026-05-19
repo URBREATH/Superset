@@ -1,12 +1,11 @@
 package eu.urbreathdsjobs.client.minio;
 
-import java.io.InputStream;
-
-import org.springframework.core.io.AbstractResource;
-
 import lombok.Data;
+import org.springframework.core.io.AbstractResource;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
+
+import java.io.InputStream;
 
 @Data
 public class MinioClientResource extends AbstractResource {

@@ -1,19 +1,18 @@
 package eu.urbreathdsjobs.processor;
 
-import java.time.LocalDateTime;
-import java.util.Map;
-
-import org.springframework.batch.core.StepExecution;
-import org.springframework.batch.core.StepExecutionListener;
-import org.springframework.batch.item.ItemProcessor;
-import org.springframework.stereotype.Component;
-
 import eu.urbreathdsjobs.common.Constants;
 import eu.urbreathdsjobs.common.MeasurementAttributeEnum;
 import eu.urbreathdsjobs.dto.TaskJson;
 import eu.urbreathdsjobs.dto.TaskJsonItem;
 import eu.urbreathdsjobs.model.Measurement;
 import eu.urbreathdsjobs.model.TemperatureCsvRow;
+import org.springframework.batch.core.StepExecution;
+import org.springframework.batch.core.StepExecutionListener;
+import org.springframework.batch.item.ItemProcessor;
+import org.springframework.stereotype.Component;
+
+import java.time.LocalDateTime;
+import java.util.Map;
 
 @Component
 public class TemperatureProcessor  implements ItemProcessor<TemperatureCsvRow, Measurement>, StepExecutionListener{

@@ -1,23 +1,11 @@
 package eu.urbreathdsjobs.writer;
 
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
-import java.sql.Types;
-import java.util.Map;
-import java.util.Objects;
-
-import eu.urbreathdsjobs.model.Location;
-import org.postgresql.util.PGobject;
-import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
-
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import cn.hutool.core.lang.Snowflake;
 import cn.hutool.core.util.IdUtil;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import eu.urbreathdsjobs.model.City;
+import eu.urbreathdsjobs.model.Location;
 import eu.urbreathdsjobs.model.Parameter;
 import eu.urbreathdsjobs.model.Sensor;
 import eu.urbreathdsjobs.reader.CityReader;
@@ -25,6 +13,16 @@ import eu.urbreathdsjobs.reader.LocationReader;
 import eu.urbreathdsjobs.reader.ParameterReader;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.postgresql.util.PGobject;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+import java.sql.Types;
+import java.util.Map;
+import java.util.Objects;
 
 @Component
 @RequiredArgsConstructor

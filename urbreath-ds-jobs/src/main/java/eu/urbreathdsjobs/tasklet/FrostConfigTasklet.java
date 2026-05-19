@@ -1,16 +1,14 @@
 package eu.urbreathdsjobs.tasklet;
 
-import ch.qos.logback.core.net.SyslogOutputStream;
-import de.fraunhofer.iosb.ilt.sta.dao.BaseDao;
 import de.fraunhofer.iosb.ilt.sta.model.Datastream;
 import de.fraunhofer.iosb.ilt.sta.model.Id;
 import de.fraunhofer.iosb.ilt.sta.model.Sensor;
 import eu.urbreathdsjobs.client.frost.FrostClientService;
 import eu.urbreathdsjobs.common.Constants;
+import eu.urbreathdsjobs.common.SensorAttributeEnum;
 import eu.urbreathdsjobs.model.City;
 import eu.urbreathdsjobs.model.Location;
 import eu.urbreathdsjobs.model.Parameter;
-import eu.urbreathdsjobs.common.SensorAttributeEnum;
 import eu.urbreathdsjobs.reader.SensorReader;
 import eu.urbreathdsjobs.writer.SensorWriter;
 import lombok.RequiredArgsConstructor;
@@ -22,7 +20,6 @@ import org.springframework.batch.core.StepContribution;
 import org.springframework.batch.core.scope.context.ChunkContext;
 import org.springframework.batch.core.step.tasklet.Tasklet;
 import org.springframework.batch.repeat.RepeatStatus;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Component;

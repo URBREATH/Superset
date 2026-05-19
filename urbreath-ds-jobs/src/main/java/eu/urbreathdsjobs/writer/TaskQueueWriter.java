@@ -1,15 +1,13 @@
 package eu.urbreathdsjobs.writer;
 
-import javax.sql.DataSource;
-
+import eu.urbreathdsjobs.model.BatchJobTask;
+import lombok.RequiredArgsConstructor;
 import org.springframework.batch.item.database.BeanPropertyItemSqlParameterSourceProvider;
 import org.springframework.batch.item.database.JdbcBatchItemWriter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.stereotype.Component;
 
-import eu.urbreathdsjobs.model.BatchJobTask;
-import eu.urbreathdsjobs.model.TrafficMeasurement;
-import lombok.RequiredArgsConstructor;
+import javax.sql.DataSource;
 
 @Component
 @RequiredArgsConstructor

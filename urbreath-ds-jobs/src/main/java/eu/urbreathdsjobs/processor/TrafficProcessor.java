@@ -1,19 +1,17 @@
 package eu.urbreathdsjobs.processor;
 
-import java.util.ArrayList;
-import java.util.List;
-
-import org.springframework.batch.item.ItemProcessor;
-import org.springframework.stereotype.Component;
-
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import cn.hutool.core.lang.Snowflake;
 import cn.hutool.core.util.IdUtil;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import eu.urbreathdsjobs.model.TrafficCsvRow;
 import eu.urbreathdsjobs.model.TrafficHistogram;
 import eu.urbreathdsjobs.model.TrafficMeasurement;
+import org.springframework.batch.item.ItemProcessor;
+import org.springframework.stereotype.Component;
+
+import java.util.ArrayList;
+import java.util.List;
 
 @Component
 public class TrafficProcessor

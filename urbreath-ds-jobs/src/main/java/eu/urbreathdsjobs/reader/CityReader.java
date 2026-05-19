@@ -1,14 +1,13 @@
 package eu.urbreathdsjobs.reader;
 
-import java.util.List;
-
+import eu.urbreathdsjobs.model.City;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Component;
 
-import eu.urbreathdsjobs.model.City;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import java.util.List;
 
 @Component
 @RequiredArgsConstructor

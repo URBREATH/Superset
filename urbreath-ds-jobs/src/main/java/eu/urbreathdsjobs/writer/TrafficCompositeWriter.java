@@ -1,18 +1,16 @@
 package eu.urbreathdsjobs.writer;
 
-import java.util.ArrayList;
-import java.util.List;
-
-import javax.sql.DataSource;
-
+import eu.urbreathdsjobs.model.TrafficMeasurement;
+import lombok.RequiredArgsConstructor;
 import org.springframework.batch.item.ItemWriter;
 import org.springframework.batch.item.database.JdbcBatchItemWriter;
 import org.springframework.batch.item.support.CompositeItemWriter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.stereotype.Component;
 
-import eu.urbreathdsjobs.model.TrafficMeasurement;
-import lombok.RequiredArgsConstructor;
+import javax.sql.DataSource;
+import java.util.ArrayList;
+import java.util.List;
 
 @Component
 @RequiredArgsConstructor

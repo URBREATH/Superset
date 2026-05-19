@@ -1,12 +1,11 @@
 package eu.urbreathdsjobs.listener;
 
+import eu.urbreathdsjobs.dto.TaskJson;
 import org.springframework.batch.core.JobExecution;
 import org.springframework.batch.core.StepExecution;
 import org.springframework.batch.core.job.flow.FlowExecutionStatus;
 import org.springframework.batch.core.job.flow.JobExecutionDecider;
 import org.springframework.stereotype.Component;
-
-import eu.urbreathdsjobs.dto.TaskJson;
 
 @Component
 public class TaskAvailabilityDecider implements JobExecutionDecider {

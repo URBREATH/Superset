@@ -1,23 +1,18 @@
 package eu.urbreathdsjobs.writer;
 
+import eu.urbreathdsjobs.model.TrafficHistogram;
+import eu.urbreathdsjobs.model.TrafficMeasurement;
+import lombok.RequiredArgsConstructor;
+import org.springframework.batch.item.Chunk;
+import org.springframework.batch.item.ItemWriter;
+import org.springframework.batch.item.database.JdbcBatchItemWriter;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
+
+import javax.sql.DataSource;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
-
-import javax.sql.DataSource;
-
-import org.springframework.batch.item.Chunk;
-import org.springframework.batch.item.ItemWriter;
-import org.springframework.batch.item.database.BeanPropertyItemSqlParameterSourceProvider;
-import org.springframework.batch.item.database.JdbcBatchItemWriter;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Bean;
-import org.springframework.stereotype.Component;
-
-import eu.urbreathdsjobs.model.TrafficHistogram;
-import eu.urbreathdsjobs.model.TrafficMeasurement;
-import lombok.Data;
-import lombok.RequiredArgsConstructor;
 
 @Component
 @RequiredArgsConstructor

@@ -1,15 +1,14 @@
 package eu.urbreathdsjobs.reader;
 
-import javax.sql.DataSource;
-
+import eu.urbreathdsjobs.model.BatchJobTask;
+import lombok.RequiredArgsConstructor;
 import org.springframework.batch.core.configuration.annotation.StepScope;
 import org.springframework.batch.item.database.JdbcCursorItemReader;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.stereotype.Component;
 
-import eu.urbreathdsjobs.model.BatchJobTask;
-import lombok.RequiredArgsConstructor;
+import javax.sql.DataSource;
 
 @Component
 @RequiredArgsConstructor

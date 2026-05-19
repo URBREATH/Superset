@@ -1,27 +1,18 @@
 package eu.urbreathdsjobs.tasklet;
 
-import eu.urbreathdsjobs.client.wms.WmsCallResult;
-import eu.urbreathdsjobs.client.wms.WmsHttpClientService;
-import eu.urbreathdsjobs.client.wms.WmsProperties;
-import eu.urbreathdsjobs.client.wms.WmsRequest;
-import eu.urbreathdsjobs.client.wms.WmsResponseHandlerService;
-import eu.urbreathdsjobs.client.wms.WmsUrlService;
+import eu.urbreathdsjobs.client.wms.*;
 import eu.urbreathdsjobs.model.Measurement;
 import eu.urbreathdsjobs.writer.MeasurementWriter;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.batch.core.StepContribution;
 import org.springframework.batch.core.scope.context.ChunkContext;
 import org.springframework.batch.core.step.tasklet.Tasklet;
 import org.springframework.batch.repeat.RepeatStatus;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Component;
 
-import java.util.ArrayList;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 @Component
 @Slf4j

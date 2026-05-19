@@ -1,7 +1,14 @@
 package eu.urbreathdsjobs.config;
 
-import java.time.DateTimeException;
-
+import eu.urbreathdsjobs.listener.JobStatusListener;
+import eu.urbreathdsjobs.listener.TaskAvailabilityDecider;
+import eu.urbreathdsjobs.model.BatchJobTask;
+import eu.urbreathdsjobs.model.Measurement;
+import eu.urbreathdsjobs.model.TemperatureCsvRow;
+import eu.urbreathdsjobs.processor.TaskQueueProcessor;
+import eu.urbreathdsjobs.processor.TemperatureProcessor;
+import eu.urbreathdsjobs.writer.MeasurementWriter;
+import lombok.RequiredArgsConstructor;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.Step;
 import org.springframework.batch.core.configuration.annotation.EnableBatchProcessing;
@@ -16,15 +23,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.transaction.PlatformTransactionManager;
 
-import eu.urbreathdsjobs.listener.JobStatusListener;
-import eu.urbreathdsjobs.listener.TaskAvailabilityDecider;
-import eu.urbreathdsjobs.model.BatchJobTask;
-import eu.urbreathdsjobs.model.Measurement;
-import eu.urbreathdsjobs.model.TemperatureCsvRow;
-import eu.urbreathdsjobs.processor.TaskQueueProcessor;
-import eu.urbreathdsjobs.processor.TemperatureProcessor;
-import eu.urbreathdsjobs.writer.MeasurementWriter;
-import lombok.RequiredArgsConstructor;
+import java.time.DateTimeException;
 
 @Configuration
 @RequiredArgsConstructor

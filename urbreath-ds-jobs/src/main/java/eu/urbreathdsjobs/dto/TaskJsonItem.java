@@ -1,8 +1,8 @@
 package eu.urbreathdsjobs.dto;
 
-import java.io.Serializable;
-
 import lombok.Data;
+
+import java.io.Serializable;
 
 @Data
 public class TaskJsonItem implements Serializable {

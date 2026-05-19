@@ -1,5 +1,14 @@
 package eu.urbreathdsjobs.config;
 
+import eu.urbreathdsjobs.listener.JobStatusListener;
+import eu.urbreathdsjobs.listener.TaskAvailabilityDecider;
+import eu.urbreathdsjobs.model.BatchJobTask;
+import eu.urbreathdsjobs.model.Measurement;
+import eu.urbreathdsjobs.model.PrecipitationCsvRow;
+import eu.urbreathdsjobs.processor.PrecipitationProcessor;
+import eu.urbreathdsjobs.processor.TaskQueueProcessor;
+import eu.urbreathdsjobs.writer.MeasurementWriter;
+import lombok.RequiredArgsConstructor;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.Step;
 import org.springframework.batch.core.configuration.annotation.EnableBatchProcessing;
@@ -13,17 +22,6 @@ import org.springframework.batch.item.file.FlatFileItemReader;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.transaction.PlatformTransactionManager;
-
-import eu.urbreathdsjobs.listener.JobStatusListener;
-import eu.urbreathdsjobs.listener.TaskAvailabilityDecider;
-import eu.urbreathdsjobs.model.BatchJobTask;
-import eu.urbreathdsjobs.model.Measurement;
-import eu.urbreathdsjobs.model.PrecipitationCsvRow;
-import eu.urbreathdsjobs.model.TemperatureCsvRow;
-import eu.urbreathdsjobs.processor.PrecipitationProcessor;
-import eu.urbreathdsjobs.processor.TaskQueueProcessor;
-import eu.urbreathdsjobs.writer.MeasurementWriter;
-import lombok.RequiredArgsConstructor;
 
 @Configuration
 @RequiredArgsConstructor
