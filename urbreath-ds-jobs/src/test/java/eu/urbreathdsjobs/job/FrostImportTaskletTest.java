@@ -6,7 +6,6 @@ import eu.urbreathdsjobs.client.frost.FrostProperties;
 import eu.urbreathdsjobs.client.frost.FrostResponseHandlerService;
 import eu.urbreathdsjobs.model.Measurement;
 import eu.urbreathdsjobs.tasklet.FrostImportTasklet;
-import eu.urbreathdsjobs.writer.MeasurementWriter;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -29,7 +28,6 @@ class FrostImportTaskletTest {
     void shouldProcessAllConfiguredFrostDatastreamsWithPagination() throws Exception {
         FrostClientService frostClientService = Mockito.mock(FrostClientService.class);
         FrostResponseHandlerService handlerService = Mockito.mock(FrostResponseHandlerService.class);
-        MeasurementWriter measurementWriter = Mockito.mock(MeasurementWriter.class);
         FrostProperties frostProperties = Mockito.mock(FrostProperties.class);
 
         when(frostProperties.getIdParam()).thenReturn(19862L);
@@ -38,7 +36,6 @@ class FrostImportTaskletTest {
         FrostImportTasklet tasklet = new FrostImportTasklet(
                 frostClientService,
                 handlerService,
-                measurementWriter,
                 frostProperties
         );
 
@@ -78,8 +75,8 @@ class FrostImportTaskletTest {
 
         assertEquals(RepeatStatus.FINISHED, status);
 
-        // Verify write called 3 times (one for each page)
-        verify(measurementWriter, times(3)).write(any());
+        // Verify response handler called for each non-empty observations page
+        verify(handlerService, times(3)).handle(any(FrostProperties.DatastreamConfig.class), any());
 
         // Verify fetchObservationsPage called for all pages (including empty ones to detect end)
         // Config1: pages 0, 1, 2 (empty)
