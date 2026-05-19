@@ -111,9 +111,15 @@ public class FrostConfigTasklet implements Tasklet {
             if (city == null) {
                 log.warn("City is null for datastream id={}, using fallback 'n/a' will be applied during insert", id);
             }
-            frostSensorPersistenceService.insertSensor(parameter, location, urSensor, city);
-            log.info("Successfully inserted datastream id={} - Sensor(name={}, idParam={}, idLocation={})",
-                id, urSensor.getName(), urSensor.getIdParam(), urSensor.getIdLocation());
+            try {
+                frostSensorPersistenceService.insertSensor(parameter, location, urSensor, city);
+                log.info("Successfully inserted datastream id={} - Sensor(name={}, idParam={}, idLocation={})",
+                    id, urSensor.getName(), urSensor.getIdParam(), urSensor.getIdLocation());
+            } catch (Exception ex) {
+                log.error("FAILED to insert datastream id={} - Sensor(name={}, displayName={}): {}",
+                    id, urSensor.getName(), urSensor.getDisplayName(), ex.getMessage(), ex);
+                return false;
+            }
         }
         
         return true;

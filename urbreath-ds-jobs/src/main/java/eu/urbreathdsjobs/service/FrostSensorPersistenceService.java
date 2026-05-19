@@ -11,13 +11,13 @@ import eu.urbreathdsjobs.model.Sensor;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Objects;
 
 @Component
 @RequiredArgsConstructor
-@Transactional
 @Slf4j
 public class FrostSensorPersistenceService {
 
@@ -26,6 +26,7 @@ public class FrostSensorPersistenceService {
     private final LocationDao locationDao;
     private final SensorDao sensorDao;
 
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public Sensor insertSensor(Parameter parameter, Location location, Sensor sensor, City city) {
         Objects.requireNonNull(parameter, "parameter is required");
         Objects.requireNonNull(location, "location is required");
