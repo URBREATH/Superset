@@ -45,7 +45,7 @@ app:
         enabled: false
         cron: "0/30 * * * * *"
     wms:
-      enabled: false
+      enabled: true
       cron: "0 0/5 * * * *"
     frost:
       config:
@@ -118,7 +118,7 @@ wms:
 
 frost:
   enabled: true
-  dry-run-config: true
+  dry-run-config: false
   base-url: https://frost-dev.urbreath.tech/FROST-Server/v1.1
   id-param: 19862
   page-size: 10

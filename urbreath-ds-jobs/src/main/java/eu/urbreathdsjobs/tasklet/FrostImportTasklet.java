@@ -5,7 +5,6 @@ import eu.urbreathdsjobs.client.frost.FrostClientService;
 import eu.urbreathdsjobs.client.frost.FrostProperties;
 import eu.urbreathdsjobs.client.frost.FrostResponseHandlerService;
 import eu.urbreathdsjobs.model.Measurement;
-import eu.urbreathdsjobs.writer.MeasurementWriter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.batch.core.StepContribution;
@@ -26,7 +25,6 @@ public class FrostImportTasklet implements Tasklet {
 
     private final FrostClientService frostClientService;
     private final FrostResponseHandlerService frostResponseHandlerService;
-    private final MeasurementWriter measurementWriter;
     private final FrostProperties frostProperties;
 
     @Override
@@ -39,7 +37,7 @@ public class FrostImportTasklet implements Tasklet {
         logDatastreamsSummary(datastreamConfigs);
 
         // Delete once at the beginning
-        //measurementWriter.deleteByIdParam(frostProperties.getIdParam());
+        // TODO: cleanup old measurements through MeasurementPersistenceService when import persistence is enabled.
 
         for (FrostProperties.DatastreamConfig datastreamConfig : datastreamConfigs) {
             try {
@@ -56,7 +54,7 @@ public class FrostImportTasklet implements Tasklet {
 
                     List<Measurement> measurements = frostResponseHandlerService.handle(datastreamConfig, observationsPage);
                     if (!measurements.isEmpty()) {
-                        //measurementWriter.write(new org.springframework.batch.item.Chunk<>(measurements));
+                        // TODO: persist page measurements through MeasurementPersistenceService.
                         totalMeasurements += measurements.size();
                         pagesMeasurements += measurements.size();
                     }

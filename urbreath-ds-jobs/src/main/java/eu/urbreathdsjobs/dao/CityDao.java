@@ -1,4 +1,4 @@
-package eu.urbreathdsjobs.reader;
+package eu.urbreathdsjobs.dao;
 
 import eu.urbreathdsjobs.model.City;
 import lombok.RequiredArgsConstructor;
@@ -12,7 +12,7 @@ import java.util.List;
 @Component
 @RequiredArgsConstructor
 @Slf4j
-public class CityReader {
+public class CityDao {
 
     private static final String FALLBACK_CITY_NAME = "n/a";
 
@@ -68,4 +68,5 @@ public class CityReader {
         return rows.isEmpty() ? null : rows.get(0);
     }
 }
+
 

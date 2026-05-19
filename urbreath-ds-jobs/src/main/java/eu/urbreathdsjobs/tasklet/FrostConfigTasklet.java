@@ -9,8 +9,8 @@ import eu.urbreathdsjobs.common.SensorAttributeEnum;
 import eu.urbreathdsjobs.model.City;
 import eu.urbreathdsjobs.model.Location;
 import eu.urbreathdsjobs.model.Parameter;
-import eu.urbreathdsjobs.reader.SensorReader;
-import eu.urbreathdsjobs.writer.SensorWriter;
+import eu.urbreathdsjobs.dao.SensorDao;
+import eu.urbreathdsjobs.service.FrostSensorPersistenceService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.geojson.GeoJsonObject;
@@ -33,8 +33,8 @@ import java.util.Map;
 public class FrostConfigTasklet implements Tasklet {
 
     private final FrostClientService frostClientService;
-    private final SensorReader sensorReader;
-    private final SensorWriter sensorWriter;
+    private final SensorDao sensorDao;
+    private final FrostSensorPersistenceService frostSensorPersistenceService;
 
     @Value("${frost.dry-run-config:false}")
     private boolean dryRun;
@@ -90,7 +90,7 @@ public class FrostConfigTasklet implements Tasklet {
         }
 
         // 2. Valida sensore non esiste già
-        if (sensorReader.sensorExists(String.valueOf(idSensor))) {
+        if (sensorDao.sensorExists(String.valueOf(idSensor))) {
             log.debug("Skipping datastream id={} - sensor with SENSOR_ID_EXTERNAL={} already exists", id, idSensor);
             return false;
         }
@@ -111,7 +111,7 @@ public class FrostConfigTasklet implements Tasklet {
             if (city == null) {
                 log.warn("City is null for datastream id={}, using fallback 'n/a' will be applied during insert", id);
             }
-            sensorWriter.insertSensor(parameter, location, urSensor, city);
+            frostSensorPersistenceService.insertSensor(parameter, location, urSensor, city);
             log.info("Successfully inserted datastream id={} - Sensor(name={}, idParam={}, idLocation={})",
                 id, urSensor.getName(), urSensor.getIdParam(), urSensor.getIdLocation());
         }

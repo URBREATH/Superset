@@ -2,7 +2,7 @@ package eu.urbreathdsjobs.tasklet;
 
 import eu.urbreathdsjobs.client.wms.*;
 import eu.urbreathdsjobs.model.Measurement;
-import eu.urbreathdsjobs.writer.MeasurementWriter;
+import eu.urbreathdsjobs.service.MeasurementPersistenceService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.batch.core.StepContribution;
 import org.springframework.batch.core.scope.context.ChunkContext;
@@ -21,7 +21,7 @@ public class WmsImportTasklet implements Tasklet {
     private final WmsUrlService wmsUrlService;
     private final WmsHttpClientService wmsHttpClientService;
     private final WmsResponseHandlerService wmsResponseHandlerService;
-    private final MeasurementWriter measurementWriter;
+    private final MeasurementPersistenceService measurementPersistenceService;
     private final WmsProperties wmsProperties;
 
     @Autowired
@@ -29,13 +29,13 @@ public class WmsImportTasklet implements Tasklet {
             WmsUrlService wmsUrlService,
             WmsHttpClientService wmsHttpClientService,
             WmsResponseHandlerService wmsResponseHandlerService,
-            MeasurementWriter measurementWriter,
+            MeasurementPersistenceService measurementPersistenceService,
             WmsProperties wmsProperties
     ) {
         this.wmsUrlService = wmsUrlService;
         this.wmsHttpClientService = wmsHttpClientService;
         this.wmsResponseHandlerService = wmsResponseHandlerService;
-        this.measurementWriter = measurementWriter;
+        this.measurementPersistenceService = measurementPersistenceService;
         this.wmsProperties = wmsProperties;
     }
 
@@ -87,7 +87,7 @@ public class WmsImportTasklet implements Tasklet {
             List<Long> sensorIds = getConfiguredSensorIds();
             log.info("Persisting measurements: deleteAndWriteBySensorIds for sensors={}, count={}", sensorIds, allMeasurements.size());
             long deleteAndWriteStartNanos = System.nanoTime();
-            measurementWriter.deleteAndWriteBySensorIds(sensorIds, allMeasurements);
+            measurementPersistenceService.deleteAndWriteBySensorIds(sensorIds, allMeasurements);
             deleteAndWriteElapsedMs = (System.nanoTime() - deleteAndWriteStartNanos) / 1_000_000;
             log.info("deleteAndWriteBySensorIds completed for sensorsCount={}, count={}, elapsedMs={}",
                     sensorIds.size(), allMeasurements.size(), deleteAndWriteElapsedMs);

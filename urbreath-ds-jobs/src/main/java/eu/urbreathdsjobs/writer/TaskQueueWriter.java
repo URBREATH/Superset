@@ -1,39 +1,29 @@
 package eu.urbreathdsjobs.writer;
 
 import eu.urbreathdsjobs.model.BatchJobTask;
+import eu.urbreathdsjobs.service.TaskQueueService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.batch.item.database.BeanPropertyItemSqlParameterSourceProvider;
-import org.springframework.batch.item.database.JdbcBatchItemWriter;
+import org.springframework.batch.item.Chunk;
+import org.springframework.batch.item.ItemWriter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.stereotype.Component;
-
-import javax.sql.DataSource;
 
 @Component
 @RequiredArgsConstructor
 public class TaskQueueWriter {
-	
-	private final DataSource dataSource;
+
+    private final TaskQueueService taskQueueService;
 
 	@Bean
-	public JdbcBatchItemWriter<BatchJobTask> jdbcTaskQueueWriter() {
-
-	    JdbcBatchItemWriter<BatchJobTask> writer =
-	            new JdbcBatchItemWriter<>();
-
-	    writer.setDataSource(dataSource);
-
-	    writer.setSql("""
-	        UPDATE batch_job_task_queue
-	        SET status = 1,
-	            date_mod = now()
-	        WHERE id = :id
-	    """);
-
-        writer.setItemSqlParameterSourceProvider(
-                new BeanPropertyItemSqlParameterSourceProvider<>());
-
-	    return writer;
+	public ItemWriter<BatchJobTask> jdbcTaskQueueWriter() {
+        return new ItemWriter<>() {
+            @Override
+            public void write(Chunk<? extends BatchJobTask> chunk) {
+                for (BatchJobTask task : chunk.getItems()) {
+                    taskQueueService.markInProgress(task.getId());
+                }
+            }
+        };
 	}
 
 }

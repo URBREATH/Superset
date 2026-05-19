@@ -4,14 +4,14 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.batch.core.BatchStatus;
 import org.springframework.batch.core.JobExecution;
 import org.springframework.batch.core.JobExecutionListener;
-import org.springframework.jdbc.core.JdbcTemplate;
+import eu.urbreathdsjobs.service.TaskQueueService;
 import org.springframework.stereotype.Component;
 
 @Component
 @RequiredArgsConstructor
 public class JobStatusListener implements JobExecutionListener {
 
-    private final JdbcTemplate jdbcTemplate;
+    private final TaskQueueService taskQueueService;
 
     @Override
     public void afterJob(JobExecution jobExecution) {
@@ -38,16 +38,7 @@ public class JobStatusListener implements JobExecutionListener {
             	sb.append("Righe fallite: " + s.getReadSkipCount()+ "\n");
             });
 
-            jdbcTemplate.update("""
-                UPDATE batch_job_task_queue
-                SET status = ?, note = ?,
-                    date_mod = now()
-                WHERE id = ?
-            """, status, sb.toString(), taskId);
-            
-            System.out.println("Task ID: " + taskId);
-            System.out.println("Status Batch: " + status);
-            System.out.println("Esito Batch: " + sb.toString());
+            taskQueueService.updateStatusAndNote(taskId, status, sb.toString());
     	}
     	
 

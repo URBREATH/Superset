@@ -1,16 +1,36 @@
-package eu.urbreathdsjobs.reader;
+package eu.urbreathdsjobs.dao;
 
+import cn.hutool.core.lang.Snowflake;
+import cn.hutool.core.util.IdUtil;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import eu.urbreathdsjobs.model.Sensor;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.postgresql.util.PGobject;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
+
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+import java.util.Map;
+import java.util.Objects;
 
 @Component
 @RequiredArgsConstructor
 @Slf4j
-public class SensorReader {
+public class SensorDao {
+
+    private static final Snowflake SNOWFLAKE = IdUtil.getSnowflake(1, 1);
+
+    private static final String INSERT_SENSOR = """
+            INSERT INTO public.sensor
+            (id_sensor, "name", id_param, latitude, longitude, display_name, id_location, metadata)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            """;
 
     private final JdbcTemplate jdbcTemplate;
+    private final ObjectMapper mapper = new ObjectMapper();
 
     /**
      * Verifica se un sensore con il dato ID esterno esiste già nel database.
@@ -65,5 +85,45 @@ public class SensorReader {
         return jdbcTemplate.queryForObject(sql, Integer.class, externalSensorId);
     }
 
+    public Sensor insertSensor(Sensor sensor) {
+        Objects.requireNonNull(sensor, "sensor is required");
+        Objects.requireNonNull(sensor.getIdParam(), "sensor.idParam is required");
+        Objects.requireNonNull(sensor.getIdLocation(), "sensor.idLocation is required");
+
+        if (sensor.getIdSensor() == null) {
+            sensor.setIdSensor(SNOWFLAKE.nextId());
+        }
+
+        jdbcTemplate.update(INSERT_SENSOR, ps -> setSensorValues(ps, sensor));
+
+        log.info("Inserted sensor id_sensor={} for id_param={} and id_location={}",
+                sensor.getIdSensor(), sensor.getIdParam(), sensor.getIdLocation());
+        return sensor;
+    }
+
+    private void setSensorValues(PreparedStatement ps, Sensor sensor) throws SQLException {
+        ps.setLong(1, sensor.getIdSensor());
+        ps.setString(2, sensor.getName());
+        ps.setLong(3, sensor.getIdParam());
+        ps.setObject(4, sensor.getLatitude());
+        ps.setObject(5, sensor.getLongitude());
+        ps.setString(6, sensor.getDisplayName());
+        ps.setLong(7, sensor.getIdLocation());
+        ps.setObject(8, toJsonb(sensor.getMetadata()));
+    }
+
+    private PGobject toJsonb(Map<String, Object> metadata) throws SQLException {
+        PGobject jsonObject = new PGobject();
+        jsonObject.setType("jsonb");
+
+        try {
+            jsonObject.setValue(mapper.writeValueAsString(metadata == null ? Map.of() : metadata));
+            return jsonObject;
+        } catch (JsonProcessingException e) {
+            throw new SQLException("Errore serializzazione JSON metadata sensor", e);
+        }
+    }
+
 }
+
 

@@ -15,9 +15,9 @@ import org.springframework.batch.core.job.builder.JobBuilder;
 import org.springframework.batch.core.launch.support.RunIdIncrementer;
 import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.batch.core.step.builder.StepBuilder;
-import org.springframework.batch.item.database.JdbcBatchItemWriter;
-import org.springframework.batch.item.database.JdbcCursorItemReader;
 import org.springframework.batch.item.file.FlatFileItemReader;
+import org.springframework.batch.item.ItemReader;
+import org.springframework.batch.item.ItemWriter;
 import org.springframework.batch.item.support.CompositeItemWriter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -39,10 +39,10 @@ public class TrafficDataImportJobConfig {
 	private final TrafficProcessor trafficProcessor;
 	private final CompositeItemWriter<TrafficMeasurement> compositeTrafficItemWriter;
 	
-	private final JdbcCursorItemReader<BatchJobTask> jdbcTaskQueueReader;
+	private final ItemReader<BatchJobTask> jdbcTaskQueueReader;
 	private final TaskQueueProcessor taskProcessor;
-	private final JdbcBatchItemWriter<BatchJobTask> jdbcTaskQueueWriter;
-	
+	private final ItemWriter<BatchJobTask> jdbcTaskQueueWriter;
+
 	private final JobStatusListener jobStatusListener;
 	
 	private final TaskAvailabilityDecider decider;
