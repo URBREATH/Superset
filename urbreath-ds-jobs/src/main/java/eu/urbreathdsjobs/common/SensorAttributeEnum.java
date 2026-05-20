@@ -2,6 +2,7 @@ package eu.urbreathdsjobs.common;
 
 public enum SensorAttributeEnum {
 
+	LAST_OBSERVATION_DATE("Ultima data delle osservazioni inserite a sistema", "DATE"),
 	SENSOR_ID_EXTERNAL("Identificativo esterno del sensore da sorgenti dati esterne", "NUMBER"),
 	SENSOR_TYPE("Tipologia di sensore (es. anemometro, termometro)", "STRING"),
 	MANUFACTURER("Produttore del sensore", "STRING"),

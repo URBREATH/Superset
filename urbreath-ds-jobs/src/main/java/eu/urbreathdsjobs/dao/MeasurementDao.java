@@ -1,5 +1,7 @@
 package eu.urbreathdsjobs.dao;
 
+import cn.hutool.core.lang.Snowflake;
+import cn.hutool.core.util.IdUtil;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import eu.urbreathdsjobs.model.Measurement;
@@ -9,6 +11,7 @@ import org.postgresql.util.PGobject;
 import org.springframework.jdbc.core.BatchPreparedStatementSetter;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
+import org.springframework.lang.NonNull;
 
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
@@ -22,10 +25,12 @@ import java.util.stream.Collectors;
 @Slf4j
 public class MeasurementDao {
 
+    private static final Snowflake SNOWFLAKE = IdUtil.getSnowflake(1, 1);
+
     private static final String INSERT_MEASUREMENT = """
             INSERT INTO public.measurement
-            (id_param, id_sensor, period, date_from, date_to, min, q02, q24, median, q75, q98, max, avg, sd, val, metadata)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            (id_measure, id_param, id_sensor, period, date_from, date_to, min, q02, q24, median, q75, q98, max, avg, sd, val, metadata)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """;
 
     private static final String DELETE_BY_ID_PARAM = """
@@ -38,15 +43,14 @@ public class MeasurementDao {
     private final JdbcTemplate jdbcTemplate;
     private final ObjectMapper mapper = new ObjectMapper();
 
-    public int deleteByIdParam(Long idParam) {
+    public void deleteByIdParam(Long idParam) {
         int deleted = jdbcTemplate.update(DELETE_BY_ID_PARAM, idParam);
         log.info("Deleted {} measurements for id_param={}", deleted, idParam);
-        return deleted;
     }
 
-    public int deleteBySensorIds(List<Long> sensorIds) {
+    public void deleteBySensorIds(List<Long> sensorIds) {
         if (sensorIds == null || sensorIds.isEmpty()) {
-            return 0;
+            return;
         }
 
         List<Long> distinctSensorIds = sensorIds.stream().distinct().collect(Collectors.toList());
@@ -55,7 +59,6 @@ public class MeasurementDao {
 
         int deleted = jdbcTemplate.update(sql, distinctSensorIds.toArray());
         log.info("Deleted {} measurements for id_sensor IN {}", deleted, distinctSensorIds);
-        return deleted;
     }
 
     public void batchInsert(List<? extends Measurement> items) {
@@ -67,25 +70,30 @@ public class MeasurementDao {
                 INSERT_MEASUREMENT,
                 new BatchPreparedStatementSetter() {
                     @Override
-                    public void setValues(PreparedStatement ps, int i) throws SQLException {
+                    public void setValues(@NonNull PreparedStatement ps, int i) throws SQLException {
                         Measurement m = items.get(i);
 
-                        ps.setLong(1, m.getIdParam());
-                        ps.setLong(2, m.getIdSensor());
-                        ps.setString(3, m.getPeriod());
-                        ps.setObject(4, m.getDateFrom());
-                        ps.setObject(5, m.getDateTo());
-                        ps.setObject(6, m.getMin());
-                        ps.setObject(7, m.getQ02());
-                        ps.setObject(8, m.getQ24());
-                        ps.setObject(9, m.getMedian());
-                        ps.setObject(10, m.getQ75());
-                        ps.setObject(11, m.getQ98());
-                        ps.setObject(12, m.getMax());
-                        ps.setObject(13, m.getAvg());
-                        ps.setObject(14, m.getSd());
-                        ps.setObject(15, m.getVal());
-                        ps.setObject(16, toJsonb(m.getMetadata()));
+                        if (m.getIdMeasure() == null) {
+                            m.setIdMeasure(SNOWFLAKE.nextId());
+                        }
+
+                        ps.setLong(1, m.getIdMeasure());
+                        ps.setLong(2, m.getIdParam());
+                        ps.setLong(3, m.getIdSensor());
+                        ps.setString(4, m.getPeriod());
+                        ps.setObject(5, m.getDateFrom());
+                        ps.setObject(6, m.getDateTo());
+                        ps.setObject(7, m.getMin());
+                        ps.setObject(8, m.getQ02());
+                        ps.setObject(9, m.getQ24());
+                        ps.setObject(10, m.getMedian());
+                        ps.setObject(11, m.getQ75());
+                        ps.setObject(12, m.getQ98());
+                        ps.setObject(13, m.getMax());
+                        ps.setObject(14, m.getAvg());
+                        ps.setObject(15, m.getSd());
+                        ps.setObject(16, m.getVal());
+                        ps.setObject(17, toJsonb(m.getMetadata()));
                     }
 
                     @Override

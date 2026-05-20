@@ -1,6 +1,7 @@
 package eu.urbreathdsjobs.service;
 
 import eu.urbreathdsjobs.dao.MeasurementDao;
+import eu.urbreathdsjobs.dao.SensorDao;
 import eu.urbreathdsjobs.model.Measurement;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -26,6 +27,9 @@ class MeasurementPersistenceServiceTest {
 
     @Mock
     private MeasurementDao measurementDao;
+
+    @Mock
+    private SensorDao sensorDao;
 
     @InjectMocks
     private MeasurementPersistenceService measurementPersistenceService;
@@ -63,6 +67,16 @@ class MeasurementPersistenceServiceTest {
         measurementPersistenceService.writeMeasurements(items);
 
         verify(measurementDao, times(1)).batchInsert(items);
+    }
+
+    @Test
+    void writeMeasurementsAndUpdateLastObservationDateDelegatesToDaoAndSensorDao() {
+        List<Measurement> items = List.of(new Measurement(), new Measurement());
+
+        measurementPersistenceService.writeMeasurementsAndUpdateLastObservationDate(10L, "2024-01-02T02:00:00Z", items);
+
+        verify(measurementDao, times(1)).batchInsert(items);
+        verify(sensorDao, times(1)).updateLastObservationDate(10L, "2024-01-02T02:00:00Z");
     }
 
     @Test

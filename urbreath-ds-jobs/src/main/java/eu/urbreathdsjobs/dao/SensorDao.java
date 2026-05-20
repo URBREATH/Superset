@@ -3,6 +3,7 @@ package eu.urbreathdsjobs.dao;
 import cn.hutool.core.lang.Snowflake;
 import cn.hutool.core.util.IdUtil;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import eu.urbreathdsjobs.model.Sensor;
 import lombok.RequiredArgsConstructor;
@@ -12,7 +13,9 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
@@ -23,14 +26,62 @@ public class SensorDao {
 
     private static final Snowflake SNOWFLAKE = IdUtil.getSnowflake(1, 1);
 
+    private static final String FIND_SENSORS_WITH_EXTERNAL_ID = """
+            SELECT id_sensor, "name", id_param, latitude, longitude, display_name, id_location, metadata::text AS metadata
+            FROM public.sensor
+            WHERE metadata->>'SENSOR_ID_EXTERNAL' IS NOT NULL
+            """;
+
     private static final String INSERT_SENSOR = """
             INSERT INTO public.sensor
             (id_sensor, "name", id_param, latitude, longitude, display_name, id_location, metadata)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             """;
 
+    private static final String UPDATE_LAST_OBSERVATION_DATE = """
+            UPDATE public.sensor
+            SET metadata = jsonb_set(
+                COALESCE(metadata, '{}'::jsonb),
+                '{LAST_OBSERVATION_DATE}',
+                to_jsonb(?::text),
+                true
+            )
+            WHERE id_sensor = ?
+            """;
+
     private final JdbcTemplate jdbcTemplate;
     private final ObjectMapper mapper = new ObjectMapper();
+
+    /**
+     * Ritorna tutti i sensori che hanno il metadata SENSOR_ID_EXTERNAL valorizzato.
+     *
+     * @return lista di sensori con SENSOR_ID_EXTERNAL presente nel metadata
+     */
+    public List<Sensor> findSensorsWithExternalId() {
+        return jdbcTemplate.query(FIND_SENSORS_WITH_EXTERNAL_ID, (rs, rowNum) -> mapSensor(rs));
+    }
+
+    private Sensor mapSensor(ResultSet rs) throws SQLException {
+        Sensor sensor = new Sensor();
+        sensor.setIdSensor(rs.getLong("id_sensor"));
+        sensor.setName(rs.getString("name"));
+        sensor.setIdParam(rs.getLong("id_param"));
+        sensor.setLatitude(rs.getObject("latitude", Double.class));
+        sensor.setLongitude(rs.getObject("longitude", Double.class));
+        sensor.setDisplayName(rs.getString("display_name"));
+        sensor.setIdLocation(rs.getLong("id_location"));
+
+        String metadataJson = rs.getString("metadata");
+        if (metadataJson != null) {
+            try {
+                Map<String, Object> metadata = mapper.readValue(metadataJson, new TypeReference<>() {});
+                sensor.setMetadata(metadata);
+            } catch (JsonProcessingException e) {
+                log.warn("Failed to parse sensor metadata for id_sensor={}", sensor.getIdSensor(), e);
+            }
+        }
+        return sensor;
+    }
 
     /**
      * Verifica se un sensore con il dato ID esterno esiste già nel database.
@@ -99,6 +150,17 @@ public class SensorDao {
         log.info("Inserted sensor id_sensor={} for id_param={} and id_location={}",
                 sensor.getIdSensor(), sensor.getIdParam(), sensor.getIdLocation());
         return sensor;
+    }
+
+    public void updateLastObservationDate(Long sensorId, String lastObservationDate) {
+        Objects.requireNonNull(sensorId, "sensorId is required");
+        Objects.requireNonNull(lastObservationDate, "lastObservationDate is required");
+
+        int updated = jdbcTemplate.update(UPDATE_LAST_OBSERVATION_DATE, lastObservationDate, sensorId);
+        if (updated == 0) {
+            throw new IllegalStateException("No sensor updated for id_sensor=" + sensorId);
+        }
+        log.info("Updated LAST_OBSERVATION_DATE for sensor id_sensor={} to {}", sensorId, lastObservationDate);
     }
 
     private void setSensorValues(PreparedStatement ps, Sensor sensor) throws SQLException {
