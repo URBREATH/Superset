@@ -36,11 +36,7 @@ import java.time.LocalTime;
 import java.time.ZoneOffset;
 import java.time.Instant;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.TreeMap;
+import java.util.*;
 
 @Component
 @Slf4j
@@ -64,6 +60,13 @@ public class FrostImportTasklet implements Tasklet {
 
         // 1. Recupera tutti i sensori con SENSOR_ID_EXTERNAL valorizzato
         List<Sensor> sensors = sensorDao.findSensorsWithExternalId();
+
+        // Nel caso volessi estrarre uno specifico Sensore (test/debug/altro)
+//        Optional<Sensor> sensor = sensorDao.findSensorByExternalId("1");
+//        sensor.ifPresent(s -> {
+//            int sensorResult = processSensor(s);
+//        });
+
         log.info("Found {} sensors with SENSOR_ID_EXTERNAL in metadata", sensors.size());
 
         int successCount = 0;
@@ -192,7 +195,7 @@ public class FrostImportTasklet implements Tasklet {
         measurement.setMax(max.getAsDouble());
         measurement.setAvg(mean.getAsDouble());
         measurement.setSd(sd.getAsDouble());
-        measurement.setVal(mean.getAsDouble());
+        measurement.setVal(null);
 
         Map<String, Object> metadata = new LinkedHashMap<>();
         metadata.put(MeasurementAttributeEnum.MEASURE_TYPE.name(), "FROST_SERVER");

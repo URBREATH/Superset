@@ -417,7 +417,6 @@ public class FrostClientService {
                 break;
             }
             pageIndex++;
-            break; //TODO DA TOGLIERE
         }
 
         long totalElapsedMs = (System.nanoTime() - totalStart) / 1_000_000;

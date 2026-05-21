@@ -122,7 +122,7 @@ frost:
   dry-run-config: false
   base-url: https://frost-dev.urbreath.tech/FROST-Server/v1.1
   id-param: 19862
-  page-size: 10
+  page-size: 500
   follow-pagination-links: true
   order-by: phenomenonTime desc
   expand: Datastream($expand=Thing,Sensor,ObservedProperty)

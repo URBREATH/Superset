@@ -18,6 +18,7 @@ import java.sql.SQLException;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 
 @Component
 @RequiredArgsConstructor
@@ -36,6 +37,12 @@ public class SensorDao {
             INSERT INTO public.sensor
             (id_sensor, "name", id_param, latitude, longitude, display_name, id_location, metadata)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            """;
+
+    private static final String FIND_SENSOR_BY_EXTERNAL_ID = """
+            SELECT id_sensor, "name", id_param, latitude, longitude, display_name, id_location, metadata::text AS metadata
+            FROM public.sensor
+            WHERE metadata->>'SENSOR_ID_EXTERNAL' = ?
             """;
 
     private static final String UPDATE_LAST_OBSERVATION_DATE = """
@@ -59,6 +66,24 @@ public class SensorDao {
      */
     public List<Sensor> findSensorsWithExternalId() {
         return jdbcTemplate.query(FIND_SENSORS_WITH_EXTERNAL_ID, (rs, rowNum) -> mapSensor(rs));
+    }
+
+    public Optional<Sensor> findSensorByExternalId(String externalSensorId) {
+        if (externalSensorId == null || externalSensorId.trim().isEmpty()) {
+            return Optional.empty();
+        }
+
+        List<Sensor> sensors = jdbcTemplate.query(
+                FIND_SENSOR_BY_EXTERNAL_ID,
+                (rs, rowNum) -> mapSensor(rs),
+                externalSensorId.trim()
+        );
+
+        if (sensors.size() > 1) {
+            log.warn("Found {} sensors for SENSOR_ID_EXTERNAL={} (expected at most one)", sensors.size(), externalSensorId);
+        }
+
+        return sensors.stream().findFirst();
     }
 
     private Sensor mapSensor(ResultSet rs) throws SQLException {
