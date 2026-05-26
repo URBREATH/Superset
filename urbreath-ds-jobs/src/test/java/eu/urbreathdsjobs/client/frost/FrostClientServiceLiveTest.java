@@ -4,6 +4,7 @@ import de.fraunhofer.iosb.ilt.sta.model.*;
 import de.fraunhofer.iosb.ilt.sta.model.ext.EntityList;
 import de.fraunhofer.iosb.ilt.sta.service.SensorThingsService;
 import eu.urbreathdsjobs.launcher.App;
+import eu.urbreathdsjobs.tasklet.FrostConfigTasklet;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -58,6 +59,9 @@ class FrostClientServiceLiveTest {
     @Autowired(required = false)
     @Qualifier("frostConfigJob")
     private Job frostConfigJob;
+
+    @Autowired(required = false)
+    private FrostConfigTasklet frostConfigTasklet;
 
     @Test
     @DisplayName("Should query at least one datastream with real HTTP calls")
@@ -276,6 +280,21 @@ class FrostClientServiceLiveTest {
         log.info("[LIVE] Job status: {}", execution.getStatus());
 
         assertEquals(BatchStatus.COMPLETED, execution.getStatus());
+    }
+
+    @Test
+    @DisplayName("Should invoke FrostConfigTasklet recovery method for missing SENSOR_ID_EXTERNAL")
+    void shouldRecoverMissingExternalSensorIdsViaTaskletMethod() {
+        assumeTrue(frostConfigTasklet != null,
+                "FrostConfigTasklet not autowired (likely disabled in test config)");
+
+        long start = System.nanoTime();
+        int recovered = frostConfigTasklet.recoverMissingExternalSensorIdsForPeopleDatastreams();
+        long elapsedMs = (System.nanoTime() - start) / 1_000_000;
+
+        log.info("[LIVE] recoverMissingExternalSensorIdsForPeopleDatastreams completed in {} ms, recovered={}",
+                elapsedMs, recovered);
+        assertTrue(recovered >= 0);
     }
 
 }

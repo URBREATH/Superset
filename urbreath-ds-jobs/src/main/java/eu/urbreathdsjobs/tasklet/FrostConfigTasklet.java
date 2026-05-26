@@ -24,13 +24,25 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Component;
 
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Component
 @Slf4j
 @RequiredArgsConstructor
 public class FrostConfigTasklet implements Tasklet {
+
+    private static final String UNIT_SYMBOL_PEOPLE = "ppl";
+    private static final Set<String> EXPECTED_PEOPLE_NAMES = Set.of(
+            "PeopleCountTotal",
+            "PeopleCountIn",
+            "PeopleCountOut"
+    );
 
     private final FrostClientService frostClientService;
     private final SensorDao sensorDao;
@@ -77,6 +89,142 @@ public class FrostConfigTasklet implements Tasklet {
         return RepeatStatus.FINISHED;
     }
 
+    /**
+     * Recovery mirato per sensori "people" (unitSymbol=ppl):
+     * riallinea SENSOR_ID_EXTERNAL sui sensori già presenti ma con metadata mancante.
+     *
+     * @return numero di sensori recuperati
+     */
+    public int recoverMissingExternalSensorIdsForPeopleDatastreams() {
+        int recovered = 0;
+        int scannedPeopleDatastreams = 0;
+        int skippedAlreadyMapped = 0;
+        int skippedUnexpectedPeopleName = 0;
+        Map<String, RecoveryGroup> groups = new LinkedHashMap<>();
+        int totalPages = frostClientService.countSensorPages();
+
+        for (int page = 0; page < totalPages; page++) {
+            List<Sensor> sensors = frostClientService.fetchSensorsPage(page);
+            for (Sensor sensor : sensors) {
+                Long sensorId = frostClientService.idValue(sensor.getId());
+                if (sensorId == null) {
+                    continue;
+                }
+
+                List<Datastream> datastreams = frostClientService.fetchDatastreamsForSensor(sensorId);
+                for (Datastream datastream : datastreams) {
+                    if (!UNIT_SYMBOL_PEOPLE.equals(extractUnitSymbol(datastream))) {
+                        continue;
+                    }
+                    scannedPeopleDatastreams++;
+
+                    Long externalSensorId = frostClientService.idValue(datastream.getId());
+                    if (externalSensorId == null) {
+                        continue;
+                    }
+
+                    // Se già presente in DB non è un caso da recuperare.
+                    if (sensorDao.sensorExists(String.valueOf(externalSensorId))) {
+                        skippedAlreadyMapped++;
+                        continue;
+                    }
+
+                    Parameter parameter = getParameter(datastream);
+                    Location location = getLocation(datastream);
+                    eu.urbreathdsjobs.model.Sensor candidate = getSensor(externalSensorId, parameter, location);
+                    if (!isExpectedPeopleName(candidate.getName())) {
+                        skippedUnexpectedPeopleName++;
+                        log.warn("Skipping people recovery for unexpected datastream name='{}' (externalId={}, lat={}, lon={})",
+                                candidate.getName(), externalSensorId, candidate.getLatitude(), candidate.getLongitude());
+                        continue;
+                    }
+
+                    String key = recoveryKey(candidate);
+                    RecoveryGroup group = groups.computeIfAbsent(key, k -> new RecoveryGroup(candidate));
+                    group.externalIds.add(externalSensorId);
+                }
+            }
+        }
+
+        for (RecoveryGroup group : groups.values()) {
+            List<Long> distinctExternalIds = group.externalIds.stream()
+                    .distinct()
+                    .sorted()
+                    .toList();
+
+            List<Long> candidates = sensorDao.findSensorIdsMissingExternalByFingerprint(
+                    group.template.getName(),
+                    group.template.getDisplayName(),
+                    group.template.getLatitude(),
+                    group.template.getLongitude()
+            );
+
+            if (candidates.isEmpty()) {
+                log.warn("Recovery group without DB candidates for name={}, displayName={}, lat={}, lon={}, externalIds={}",
+                        group.template.getName(),
+                        group.template.getDisplayName(),
+                        group.template.getLatitude(),
+                        group.template.getLongitude(),
+                        distinctExternalIds);
+                continue;
+            }
+
+            if (candidates.size() != distinctExternalIds.size()) {
+                log.warn("Ambiguous recovery group (cardinality mismatch) for name={}, displayName={}, lat={}, lon={}: externalIds={}, candidateSensors={}",
+                        group.template.getName(),
+                        group.template.getDisplayName(),
+                        group.template.getLatitude(),
+                        group.template.getLongitude(),
+                        distinctExternalIds.size(),
+                        candidates.size());
+                log.warn("Details: externalIds={}, candidateSensorIds={}", distinctExternalIds, candidates);
+                continue;
+            }
+
+            List<Long> sortedCandidateIds = candidates.stream().sorted().collect(Collectors.toCollection(ArrayList::new));
+            List<Long> sortedExternalIds = distinctExternalIds.stream().sorted().collect(Collectors.toCollection(ArrayList::new));
+
+            for (int i = 0; i < sortedExternalIds.size(); i++) {
+                Long externalId = sortedExternalIds.get(i);
+                Long sensorId = sortedCandidateIds.get(i);
+                if (dryRun) {
+                    log.info("[DRY-RUN] Would recover SENSOR_ID_EXTERNAL={} on existing sensor id_sensor={} (name={}, displayName={})",
+                            externalId, sensorId, group.template.getName(), group.template.getDisplayName());
+                } else {
+                    sensorDao.updateSensorExternalId(sensorId, String.valueOf(externalId));
+                    log.info("Recovered SENSOR_ID_EXTERNAL={} on existing sensor id_sensor={} (name={}, displayName={})",
+                            externalId, sensorId, group.template.getName(), group.template.getDisplayName());
+                }
+                recovered++;
+            }
+        }
+
+        log.info("FROST people recovery completed: scannedPeopleDatastreams={}, groups={}, skippedAlreadyMapped={}, skippedUnexpectedPeopleName={}, recovered={}, dryRun={}",
+                scannedPeopleDatastreams, groups.size(), skippedAlreadyMapped, skippedUnexpectedPeopleName, recovered, dryRun);
+        return recovered;
+    }
+
+    private boolean isExpectedPeopleName(String name) {
+        return name != null && EXPECTED_PEOPLE_NAMES.contains(name);
+    }
+
+    private String recoveryKey(eu.urbreathdsjobs.model.Sensor sensor) {
+        String name = sensor.getName() == null ? "" : sensor.getName();
+        String displayName = sensor.getDisplayName() == null ? "" : sensor.getDisplayName();
+        String lat = sensor.getLatitude() == null ? "" : String.format(java.util.Locale.ROOT, "%.6f", sensor.getLatitude());
+        String lon = sensor.getLongitude() == null ? "" : String.format(java.util.Locale.ROOT, "%.6f", sensor.getLongitude());
+        return name + "|" + displayName + "|" + lat + "|" + lon;
+    }
+
+    private static final class RecoveryGroup {
+        private final eu.urbreathdsjobs.model.Sensor template;
+        private final List<Long> externalIds = new ArrayList<>();
+
+        private RecoveryGroup(eu.urbreathdsjobs.model.Sensor template) {
+            this.template = template;
+        }
+    }
+
     private boolean processDatastream(Datastream datastream) {
         Id id = datastream.getId();
         Long idSensor = frostClientService.idValue(id);
@@ -93,6 +241,11 @@ public class FrostConfigTasklet implements Tasklet {
         if (sensorDao.sensorExists(String.valueOf(idSensor))) {
             log.debug("Skipping datastream id={} - sensor with SENSOR_ID_EXTERNAL={} already exists", id, idSensor);
             return false;
+        }
+
+        if (tryRecoverMissingExternalId(datastream, idSensor)) {
+            log.info("Recovered SENSOR_ID_EXTERNAL={} for existing sensor using datastream id={}", idSensor, id);
+            return true;
         }
 
         // 3. Elabora e inserisci
@@ -122,6 +275,56 @@ public class FrostConfigTasklet implements Tasklet {
             }
         }
         
+        return true;
+    }
+
+    private boolean tryRecoverMissingExternalId(Datastream datastream, Long externalSensorId) {
+        if (externalSensorId == null) {
+            return false;
+        }
+        if (sensorDao.sensorExists(String.valueOf(externalSensorId))) {
+            return false;
+        }
+
+        Parameter parameter = getParameter(datastream);
+        Location location = getLocation(datastream);
+        eu.urbreathdsjobs.model.Sensor candidate = getSensor(externalSensorId, parameter, location);
+
+        if (UNIT_SYMBOL_PEOPLE.equals(extractUnitSymbol(datastream)) && !isExpectedPeopleName(candidate.getName())) {
+            log.warn("Skipping inline people recovery for unexpected datastream name='{}' (externalId={}, lat={}, lon={})",
+                    candidate.getName(), externalSensorId, candidate.getLatitude(), candidate.getLongitude());
+            return false;
+        }
+
+        List<Long> candidates = sensorDao.findSensorIdsMissingExternalByFingerprint(
+                candidate.getName(),
+                candidate.getDisplayName(),
+                candidate.getLatitude(),
+                candidate.getLongitude()
+        );
+
+        if (candidates.isEmpty()) {
+            return false;
+        }
+        if (candidates.size() > 1) {
+            log.warn("Ambiguous recovery for SENSOR_ID_EXTERNAL={}: {} candidate sensors found for name={}, displayName={}, lat={}, lon={}",
+                    externalSensorId,
+                    candidates.size(),
+                    candidate.getName(),
+                    candidate.getDisplayName(),
+                    candidate.getLatitude(),
+                    candidate.getLongitude());
+            return false;
+        }
+
+        Long matchedSensorId = candidates.getFirst();
+        if (dryRun) {
+            log.info("[DRY-RUN] Would recover SENSOR_ID_EXTERNAL={} on existing sensor id_sensor={}",
+                    externalSensorId, matchedSensorId);
+            return true;
+        }
+
+        sensorDao.updateSensorExternalId(matchedSensorId, String.valueOf(externalSensorId));
         return true;
     }
 

@@ -46,6 +46,8 @@ public class FrostImportTasklet implements Tasklet {
 
     private static final Snowflake SNOWFLAKE = IdUtil.getSnowflake(1, 1);
     private static final double[] QUANTILE_PROBABILITIES = {0.02, 0.24, 0.75, 0.98};
+    private static final String MEASURE_MODE_PEOPLE = "people";
+    private static final String MEASURE_MODE_STANDARD = "standard";
 
     private final FrostClientService frostClientService;
     private final FrostProperties frostProperties;
@@ -72,10 +74,17 @@ public class FrostImportTasklet implements Tasklet {
         int successCount = 0;
         int failedCount = 0;
         long totalMeasurements = 0;
+        int peopleSensors = 0;
+        int standardSensors = 0;
 
         // 2. Un sensore alla volta: la transazione è sul singolo sensore
         for (Sensor sensor : sensors) {
             try {
+                if (isPeopleSensor(sensor)) {
+                    peopleSensors++;
+                } else {
+                    standardSensors++;
+                }
                 int sensorResult = processSensor(sensor);
                 totalMeasurements += sensorResult;
                 successCount++;
@@ -85,8 +94,8 @@ public class FrostImportTasklet implements Tasklet {
             }
         }
 
-        log.info("FrostImportTasklet completed: sensors={}, success={}, failed={}, totalMeasurements={}, dryRun={}",
-                sensors.size(), successCount, failedCount, totalMeasurements, dryRun);
+        log.info("FrostImportTasklet completed: sensors={}, success={}, failed={}, peopleSensors={}, standardSensors={}, totalMeasurements={}, dryRun={}",
+                sensors.size(), successCount, failedCount, peopleSensors, standardSensors, totalMeasurements, dryRun);
 
         return RepeatStatus.FINISHED;
     }
@@ -112,6 +121,14 @@ public class FrostImportTasklet implements Tasklet {
             return 0;
         }
 
+        String measureMode = resolveMeasureMode(sensor);
+        log.info("Processing sensorId={}, displayName={}, datastreamId={}, measureMode={}, lastObservationDate={}",
+                sensor.getIdSensor(),
+                sensor.getDisplayName(),
+                config.getDatastreamId(),
+                measureMode,
+                sensor.getMetadataAttributeAsString(SensorAttributeEnum.LAST_OBSERVATION_DATE));
+
         // Scarica tutte le osservazioni per questo datastream
         List<Observation> observations = fetchAllObservations(config);
 
@@ -123,10 +140,10 @@ public class FrostImportTasklet implements Tasklet {
         // Raggruppa per giorno (ordinate per data grazie a TreeMap)
         Map<LocalDate, List<Observation>> byDay = groupObservationsByDay(observations);
 
-        log.info("sensorId={}, datastreamId={}, lastObservationDate={}: fetched {} observations across {} days",
+        log.info("sensorId={}, datastreamId={}, measureMode={}: fetched {} observations across {} days",
                 sensor.getIdSensor(),
                 config.getDatastreamId(),
-                sensor.getMetadataAttributeAsString(SensorAttributeEnum.LAST_OBSERVATION_DATE),
+                measureMode,
                 observations.size(),
                 byDay.size());
 
@@ -141,19 +158,24 @@ public class FrostImportTasklet implements Tasklet {
             }
 
             measurements.add(measurement);
-            log.debug("  sensorId={} | day={} | observations={} | min={} | max={} | avg={}",
+            log.debug("  sensorId={} | day={} | measureMode={} | observations={} | min={} | max={} | avg={} | val={} | sd={}",
                     sensor.getIdSensor(),
                     day,
+                    measureMode,
                     dayObservations.size(),
                     measurement.getMin(),
                     measurement.getMax(),
-                    measurement.getAvg());
+                    measurement.getAvg(),
+                    measurement.getVal(),
+                    measurement.getSd());
         }
 
         Instant latestObservationInstant = resolveLatestObservationInstant(observations);
         persistMeasurements(sensor, measurements, latestObservationInstant);
         return measurements.size();
     }
+
+    private static final String DISPLAY_NAME_PEOPLE = "people";
 
     private Measurement buildDailyMeasurement(Sensor sensor, LocalDate day, List<Observation> dayObservations) {
         double[] values = extractNumericResults(dayObservations);
@@ -162,46 +184,75 @@ public class FrostImportTasklet implements Tasklet {
             return null;
         }
 
-        Min min = Min.create();
-        Max max = Max.create();
-        Mean mean = Mean.create();
-        StandardDeviation sd = StandardDeviation.create();
-        for (double value : values) {
-            min.accept(value);
-            max.accept(value);
-            mean.accept(value);
-            sd.accept(value);
-        }
-
-        double median = Median.withDefaults().evaluate(values);
-        double[] quantiles = Quantile.withDefaults().evaluate(values, QUANTILE_PROBABILITIES);
-
         Measurement measurement = new Measurement();
         LocalDateTime dateFrom = LocalDateTime.of(day, LocalTime.MIDNIGHT);
         LocalDateTime dateTo = LocalDateTime.of(day, LocalTime.MAX);
 
         measurement.setIdMeasure(SNOWFLAKE.nextId());
-        measurement.setIdParam(Long.valueOf(sensor.getIdParam().longValue()));
+        measurement.setIdParam(sensor.getIdParam());
         measurement.setIdSensor(sensor.getIdSensor());
         measurement.setPeriod("1day");
         measurement.setDateFrom(dateFrom);
         measurement.setDateTo(dateTo);
-        measurement.setMin(min.getAsDouble());
-        measurement.setQ02(quantiles[0]);
-        measurement.setQ24(quantiles[1]);
-        measurement.setMedian(median);
-        measurement.setQ75(quantiles[2]);
-        measurement.setQ98(quantiles[3]);
-        measurement.setMax(max.getAsDouble());
-        measurement.setAvg(mean.getAsDouble());
-        measurement.setSd(sd.getAsDouble());
-        measurement.setVal(null);
+
+        if (isPeopleSensor(sensor)) {
+            // Sensore "people": conta i passaggi giornalieri → val = somma, sd opzionale
+            double sum = 0.0;
+            StandardDeviation sd = StandardDeviation.create();
+            for (double v : values) {
+                sum += v;
+                sd.accept(v);
+            }
+            measurement.setVal(sum);
+            measurement.setSd(values.length > 1 ? sd.getAsDouble() : null);
+
+            log.debug("  [people] sensorId={} | day={} | count={} | sum={}",
+                    sensor.getIdSensor(), day, values.length, sum);
+        } else {
+            // Sensore standard: calcolo statistiche complete
+            Min min = Min.create();
+            Max max = Max.create();
+            Mean mean = Mean.create();
+            StandardDeviation sd = StandardDeviation.create();
+            for (double v : values) {
+                min.accept(v);
+                max.accept(v);
+                mean.accept(v);
+                sd.accept(v);
+            }
+
+            double median = Median.withDefaults().evaluate(values);
+            double[] quantiles = Quantile.withDefaults().evaluate(values, QUANTILE_PROBABILITIES);
+
+            measurement.setMin(min.getAsDouble());
+            measurement.setMax(max.getAsDouble());
+            measurement.setAvg(mean.getAsDouble());
+            measurement.setVal(mean.getAsDouble());
+            measurement.setSd(sd.getAsDouble());
+            measurement.setMedian(median);
+            measurement.setQ02(quantiles[0]);
+            measurement.setQ24(quantiles[1]);
+            measurement.setQ75(quantiles[2]);
+            measurement.setQ98(quantiles[3]);
+        }
 
         Map<String, Object> metadata = new LinkedHashMap<>();
         metadata.put(MeasurementAttributeEnum.MEASURE_TYPE.name(), "FROST_SERVER");
         measurement.setMetadata(metadata);
 
         return measurement;
+    }
+
+    /**
+     * Restituisce {@code true} se il sensore rappresenta un contatore di persone
+     * (displayName = "people", case-insensitive).
+     */
+    private boolean isPeopleSensor(Sensor sensor) {
+        return DISPLAY_NAME_PEOPLE.equalsIgnoreCase(sensor.getDisplayName());
+    }
+
+    private String resolveMeasureMode(Sensor sensor) {
+        return isPeopleSensor(sensor) ? MEASURE_MODE_PEOPLE : MEASURE_MODE_STANDARD;
     }
 
     private double[] extractNumericResults(List<Observation> dayObservations) {
@@ -248,13 +299,14 @@ public class FrostImportTasklet implements Tasklet {
         }
 
         String lastObservationDate = DateTimeFormatter.ISO_INSTANT.format(latestObservationInstant);
+        String measureMode = resolveMeasureMode(sensor);
 
         if (dryRun) {
-            log.info("[DRY-RUN] Would insert {} measurements for sensorId={} and update LAST_OBSERVATION_DATE={}",
-                    measurements.size(), sensor.getIdSensor(), lastObservationDate);
+            log.info("[DRY-RUN] Would insert {} measurements for sensorId={} (mode={}) and update LAST_OBSERVATION_DATE={}",
+                    measurements.size(), sensor.getIdSensor(), measureMode, lastObservationDate);
             for (Measurement measurement : measurements) {
                 log.info(
-                        "[DRY-RUN] Measurement idMeasure={}, idSensor={}, idParam={}, period={}, dateFrom={}, dateTo={}, min={}, q02={}, q24={}, median={}, q75={}, q98={}, max={}, avg={}, sd={}, val={}, metadata={}",
+                        "[DRY-RUN] Measurement idMeasure={}, idSensor={}, idParam={}, period={}, dateFrom={}, dateTo={}, min={}, q02={}, q24={}, median={}, q75={}, q98={}, max={}, avg={}, sd={}, val={}, mode={}, metadata={}",
                         measurement.getIdMeasure(),
                         measurement.getIdSensor(),
                         measurement.getIdParam(),
@@ -271,6 +323,7 @@ public class FrostImportTasklet implements Tasklet {
                         measurement.getAvg(),
                         measurement.getSd(),
                         measurement.getVal(),
+                        measureMode,
                         measurement.getMetadata()
                 );
             }
@@ -282,8 +335,8 @@ public class FrostImportTasklet implements Tasklet {
                 lastObservationDate,
                 measurements
         );
-        log.info("Inserted {} daily measurements for sensorId={} and updated LAST_OBSERVATION_DATE={}",
-                measurements.size(), sensor.getIdSensor(), lastObservationDate);
+        log.info("Inserted {} daily measurements for sensorId={} (mode={}) and updated LAST_OBSERVATION_DATE={}",
+                measurements.size(), sensor.getIdSensor(), measureMode, lastObservationDate);
     }
 
     private Instant resolveLatestObservationInstant(List<Observation> observations) {

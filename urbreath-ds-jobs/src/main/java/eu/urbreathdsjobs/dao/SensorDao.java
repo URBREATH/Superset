@@ -15,6 +15,7 @@ import org.springframework.stereotype.Component;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -50,6 +51,17 @@ public class SensorDao {
             SET metadata = jsonb_set(
                 COALESCE(metadata, '{}'::jsonb),
                 '{LAST_OBSERVATION_DATE}',
+                to_jsonb(?::text),
+                true
+            )
+            WHERE id_sensor = ?
+            """;
+
+    private static final String UPDATE_SENSOR_EXTERNAL_ID = """
+            UPDATE public.sensor
+            SET metadata = jsonb_set(
+                COALESCE(metadata, '{}'::jsonb),
+                '{SENSOR_ID_EXTERNAL}',
                 to_jsonb(?::text),
                 true
             )
@@ -186,6 +198,52 @@ public class SensorDao {
             throw new IllegalStateException("No sensor updated for id_sensor=" + sensorId);
         }
         log.info("Updated LAST_OBSERVATION_DATE for sensor id_sensor={} to {}", sensorId, lastObservationDate);
+    }
+
+    public List<Long> findSensorIdsMissingExternalByFingerprint(String name, String displayName, Double latitude, Double longitude) {
+        StringBuilder sql = new StringBuilder("""
+                SELECT id_sensor
+                FROM public.sensor
+                WHERE (
+                    metadata IS NULL
+                    OR metadata = '{}'::jsonb
+                    OR metadata->>'SENSOR_ID_EXTERNAL' IS NULL
+                )
+                """);
+
+        List<Object> args = new ArrayList<>();
+        if (name != null) {
+            sql.append(" AND name = ?");
+            args.add(name);
+        }
+        if (displayName != null) {
+            sql.append(" AND display_name = ?");
+            args.add(displayName);
+        }
+        if (latitude != null) {
+            sql.append(" AND latitude BETWEEN ? AND ?");
+            args.add(latitude - 0.000001d);
+            args.add(latitude + 0.000001d);
+        }
+        if (longitude != null) {
+            sql.append(" AND longitude BETWEEN ? AND ?");
+            args.add(longitude - 0.000001d);
+            args.add(longitude + 0.000001d);
+        }
+        sql.append(" ORDER BY id_sensor");
+
+        return jdbcTemplate.query(sql.toString(), (rs, rowNum) -> rs.getLong("id_sensor"), args.toArray());
+    }
+
+    public void updateSensorExternalId(Long sensorId, String externalSensorId) {
+        Objects.requireNonNull(sensorId, "sensorId is required");
+        Objects.requireNonNull(externalSensorId, "externalSensorId is required");
+
+        int updated = jdbcTemplate.update(UPDATE_SENSOR_EXTERNAL_ID, externalSensorId, sensorId);
+        if (updated == 0) {
+            throw new IllegalStateException("No sensor updated for id_sensor=" + sensorId);
+        }
+        log.info("Updated SENSOR_ID_EXTERNAL for sensor id_sensor={} to {}", sensorId, externalSensorId);
     }
 
     private void setSensorValues(PreparedStatement ps, Sensor sensor) throws SQLException {
