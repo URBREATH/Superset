@@ -1,0 +1,1032 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>URBreath – Analisi Sondaggio Cluj-Napoca</title>
+  <style>
+    :root {
+      --green-dark:  #1a6b3c;
+      --green-mid:   #2e9e5b;
+      --green-light: #d4f0e0;
+      --blue-dark:   #1b4f72;
+      --blue-mid:    #2980b9;
+      --blue-light:  #d6eaf8;
+      --orange:      #e67e22;
+      --red:         #c0392b;
+      --yellow:      #f1c40f;
+      --gray-bg:     #f4f6f8;
+      --gray-border: #dee2e6;
+      --text:        #2c3e50;
+      --white:       #ffffff;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background: var(--gray-bg);
+      color: var(--text);
+      line-height: 1.6;
+    }
+
+    /* ── HEADER ─────────────────────────────────────── */
+    header {
+      background: linear-gradient(135deg, var(--green-dark) 0%, var(--blue-dark) 100%);
+      color: var(--white);
+      padding: 40px 48px 32px;
+    }
+    header .badge {
+      display: inline-block;
+      background: rgba(255,255,255,.18);
+      border: 1px solid rgba(255,255,255,.35);
+      border-radius: 20px;
+      font-size: .75rem;
+      font-weight: 600;
+      letter-spacing: .06em;
+      padding: 4px 14px;
+      margin-bottom: 14px;
+      text-transform: uppercase;
+    }
+    header h1 { font-size: 2rem; font-weight: 700; margin-bottom: 6px; }
+    header p  { font-size: 1rem; opacity: .85; margin-bottom: 4px; }
+    header .meta { font-size: .8rem; opacity: .6; margin-top: 12px; }
+
+    /* ── LAYOUT ─────────────────────────────────────── */
+    main { max-width: 1200px; margin: 0 auto; padding: 40px 24px 80px; }
+
+    section { margin-bottom: 48px; }
+
+    h2 {
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: var(--green-dark);
+      border-left: 5px solid var(--green-mid);
+      padding-left: 14px;
+      margin-bottom: 20px;
+    }
+    h3 {
+      font-size: 1.05rem;
+      font-weight: 600;
+      color: var(--blue-dark);
+      margin-bottom: 10px;
+      margin-top: 22px;
+    }
+
+    p { margin-bottom: 10px; }
+
+    /* ── CARDS GRID ─────────────────────────────────── */
+    .card-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    .card {
+      background: var(--white);
+      border: 1px solid var(--gray-border);
+      border-radius: 10px;
+      padding: 20px 18px;
+      box-shadow: 0 1px 4px rgba(0,0,0,.06);
+    }
+    .card .label  { font-size: .75rem; font-weight: 600; color: #7f8c8d; text-transform: uppercase; letter-spacing: .05em; margin-bottom: 6px; }
+    .card .value  { font-size: 2rem; font-weight: 700; color: var(--green-dark); line-height: 1.1; }
+    .card .sub    { font-size: .82rem; color: #7f8c8d; margin-top: 4px; }
+
+    /* ── HERO METRIC ────────────────────────────────── */
+    .hero-metric {
+      background: linear-gradient(135deg, var(--blue-dark), var(--green-dark));
+      color: var(--white);
+      border-radius: 14px;
+      padding: 28px 32px;
+      display: flex;
+      align-items: center;
+      gap: 28px;
+      margin-bottom: 32px;
+      box-shadow: 0 4px 16px rgba(0,0,0,.12);
+    }
+    .hero-metric .big { font-size: 3.5rem; font-weight: 800; line-height: 1; }
+    .hero-metric .desc { font-size: 1rem; opacity: .9; }
+    .hero-metric .desc strong { display: block; font-size: 1.2rem; margin-bottom: 4px; }
+
+    /* ── TABLES ─────────────────────────────────────── */
+    .table-wrap { overflow-x: auto; margin-bottom: 20px; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: .88rem;
+      background: var(--white);
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: 0 1px 4px rgba(0,0,0,.07);
+    }
+    th {
+      background: var(--green-dark);
+      color: var(--white);
+      padding: 10px 14px;
+      text-align: left;
+      font-weight: 600;
+      font-size: .82rem;
+      letter-spacing: .03em;
+    }
+    td { padding: 9px 14px; border-bottom: 1px solid var(--gray-border); vertical-align: middle; }
+    tr:last-child td { border-bottom: none; }
+    tr:nth-child(even) td { background: #f9fbfc; }
+    tr:hover td { background: var(--green-light); }
+
+    /* ── BAR MINI ───────────────────────────────────── */
+    .bar-container { display: flex; align-items: center; gap: 8px; }
+    .bar-track { flex: 1; background: #e8ecef; border-radius: 4px; height: 10px; min-width: 80px; }
+    .bar-fill  { height: 10px; border-radius: 4px; }
+    .bar-label { font-size: .8rem; font-weight: 600; min-width: 38px; text-align: right; color: var(--text); }
+
+    /* ── STACKED BAR CHART ──────────────────────────── */
+    .stacked-chart { width: 100%; }
+    .stacked-row { display: flex; align-items: center; margin-bottom: 10px; gap: 10px; }
+    .stacked-row .row-label { width: 100px; font-size: .82rem; font-weight: 600; flex-shrink: 0; }
+    .stacked-row .row-bar   { flex: 1; display: flex; height: 26px; border-radius: 5px; overflow: hidden; }
+    .stacked-row .row-n     { font-size: .75rem; color: #7f8c8d; flex-shrink: 0; width: 48px; text-align: right; }
+    .seg { display: flex; align-items: center; justify-content: center; font-size: .72rem; font-weight: 600; color: var(--white); overflow: hidden; }
+
+    /* ── SATISFACTION GRID ──────────────────────────── */
+    .sat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    @media (max-width: 700px) { .sat-grid { grid-template-columns: 1fr; } }
+    .sat-item { background: var(--white); border: 1px solid var(--gray-border); border-radius: 8px; padding: 12px 14px; }
+    .sat-item .si-label { font-size: .78rem; color: #555; margin-bottom: 6px; }
+    .score-dots { display: flex; gap: 5px; }
+    .dot { width: 18px; height: 18px; border-radius: 50%; border: 2px solid #ccc; }
+    .dot.filled-1 { background: #e74c3c; border-color: #e74c3c; }
+    .dot.filled-2 { background: #e67e22; border-color: #e67e22; }
+    .dot.filled-3 { background: #f1c40f; border-color: #f1c40f; }
+    .dot.filled-4 { background: #2ecc71; border-color: #2ecc71; }
+    .dot.filled-5 { background: #27ae60; border-color: #27ae60; }
+    .score-val { font-size: .78rem; color: #7f8c8d; margin-top: 4px; }
+
+    /* ── HEATMAP ────────────────────────────────────── */
+    .heatmap-wrap { overflow-x: auto; }
+    .heatmap { border-collapse: collapse; font-size: .8rem; background: var(--white); border-radius: 10px; overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,.07); }
+    .heatmap th { padding: 8px 14px; background: var(--green-dark); color: #fff; font-weight: 600; text-align: center; }
+    .heatmap th.indicator-col { text-align: left; width: 270px; }
+    .heatmap td { padding: 7px 10px; border-bottom: 1px solid #eee; text-align: center; font-weight: 600; font-size: .82rem; }
+    .heatmap td.indicator-label { text-align: left; font-weight: 400; color: var(--text); padding-left: 14px; }
+
+    /* ── CALLOUT / AVVERTENZA ───────────────────────── */
+    .callout {
+      border-left: 4px solid var(--orange);
+      background: #fff8f0;
+      padding: 12px 16px;
+      border-radius: 0 8px 8px 0;
+      margin-bottom: 18px;
+      font-size: .88rem;
+    }
+    .callout.info { border-color: var(--blue-mid); background: var(--blue-light); }
+    .callout.success { border-color: var(--green-mid); background: var(--green-light); }
+    .callout strong { color: var(--orange); }
+    .callout.info strong { color: var(--blue-dark); }
+    .callout.success strong { color: var(--green-dark); }
+
+    /* ── DASHBOARD LAYOUT PREVIEW ───────────────────── */
+    .dashboard-preview {
+      border: 2px dashed var(--gray-border);
+      border-radius: 12px;
+      padding: 20px;
+      background: var(--white);
+    }
+    .dash-row { display: flex; gap: 12px; margin-bottom: 12px; }
+    .dash-tile {
+      flex: 1;
+      border: 1px solid var(--gray-border);
+      border-radius: 8px;
+      padding: 14px 16px;
+      text-align: center;
+      font-size: .82rem;
+      font-weight: 600;
+      color: var(--blue-dark);
+      background: var(--blue-light);
+    }
+    .dash-tile.full  { flex: 2; }
+    .dash-tile.hero  { background: var(--green-light); color: var(--green-dark); font-size: .9rem; }
+    .dash-tile .tt   { font-size: .7rem; font-weight: 400; color: #7f8c8d; display: block; margin-top: 4px; }
+    .dash-tile.filter { background: #f8f4ff; color: #6c3483; border-color: #d7bde2; }
+
+    /* ── SQL BOX ────────────────────────────────────── */
+    pre.sql {
+      background: #1e2a35;
+      color: #a8d8ea;
+      padding: 20px 22px;
+      border-radius: 10px;
+      font-size: .82rem;
+      overflow-x: auto;
+      line-height: 1.6;
+    }
+    pre.sql .kw  { color: #f0c27f; font-weight: 600; }
+    pre.sql .cm  { color: #5f7f6e; font-style: italic; }
+    pre.sql .str { color: #a8e6cf; }
+
+    /* ── LEGEND ─────────────────────────────────────── */
+    .legend { display: flex; flex-wrap: wrap; gap: 10px; font-size: .8rem; margin-bottom: 14px; }
+    .legend-item { display: flex; align-items: center; gap: 6px; }
+    .legend-dot { width: 12px; height: 12px; border-radius: 3px; flex-shrink: 0; }
+
+    /* ── TAG ────────────────────────────────────────── */
+    .tag {
+      display: inline-block;
+      background: var(--green-light);
+      color: var(--green-dark);
+      border-radius: 4px;
+      padding: 2px 8px;
+      font-size: .75rem;
+      font-weight: 600;
+      margin: 2px;
+    }
+    .tag.orange { background: #fdebd0; color: #a04000; }
+    .tag.blue   { background: var(--blue-light); color: var(--blue-dark); }
+    .tag.red    { background: #fadbd8; color: #922b21; }
+
+    /* ── FOOTER ─────────────────────────────────────── */
+    footer {
+      text-align: center;
+      font-size: .78rem;
+      color: #95a5a6;
+      padding: 30px 20px;
+      border-top: 1px solid var(--gray-border);
+      margin-top: 40px;
+    }
+  </style>
+</head>
+<body>
+
+<!-- ══════════════════ HEADER ══════════════════ -->
+<header>
+  <div class="badge">URBreath · Cluj-Napoca · First Survey</div>
+  <h1>🌿 Analisi Sondaggio Cittadini</h1>
+  <p>Studio e piano di visualizzazione per Apache Superset</p>
+  <p>Siti verdi urbani — Quartieri Someșeni, Iris, Timișului</p>
+  <div class="meta">Documento generato il 28 maggio 2026 · 67 rispondenti · 98 variabili · 4 siti verdi</div>
+</header>
+
+<!-- ══════════════════ MAIN ══════════════════ -->
+<main>
+
+  <!-- ── 1. OVERVIEW ── -->
+  <section id="overview">
+    <h2>1. Contesto e dimensione del campione</h2>
+
+    <div class="hero-metric">
+      <div class="big">3.73<span style="font-size:1.6rem;opacity:.7">/5</span></div>
+      <div class="desc">
+        <strong>Impatto percepito del cambiamento climatico sulla qualità della vita</strong>
+        Media globale (scala 1 = nessun impatto, 5 = impatto molto forte).
+        I cittadini di Cluj percepiscono il cambiamento climatico come un problema reale e presente.
+      </div>
+    </div>
+
+    <div class="card-grid">
+      <div class="card">
+        <div class="label">Rispondenti totali</div>
+        <div class="value">67</div>
+        <div class="sub">Ottobre 2025 · Google Forms</div>
+      </div>
+      <div class="card">
+        <div class="label">Genere</div>
+        <div class="value">54% F</div>
+        <div class="sub">36 donne · 31 uomini</div>
+      </div>
+      <div class="card">
+        <div class="label">Età prevalente</div>
+        <div class="value">35–44</div>
+        <div class="sub">28% del campione (19 persone)</div>
+      </div>
+      <div class="card">
+        <div class="label">Occupazione prevalente</div>
+        <div class="value">70%</div>
+        <div class="sub">Lavoratori dipendenti (47/67)</div>
+      </div>
+      <div class="card">
+        <div class="label">Quartiere principale</div>
+        <div class="value">Someșeni</div>
+        <div class="sub">45% dei rispondenti (30/67)</div>
+      </div>
+      <div class="card">
+        <div class="label">Variabili nel sondaggio</div>
+        <div class="value">98</div>
+        <div class="sub">1 foglio Excel · 4 sezioni tematiche</div>
+      </div>
+    </div>
+
+    <div class="callout info">
+      <strong>Nota strutturale:</strong> Il sondaggio è strutturato <em>per sito verde</em>. Ogni rispondente risponde prima a una sezione comune (demografica + consapevolezza NBS), poi alle domande specifiche del sito verde più vicino a casa propria. <strong>Site 4 (Barc III)</strong> è l'unico per cui rispondono tutti e 67 i partecipanti — gli altri siti hanno campioni parziali.
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Sito</th>
+            <th>Localizzazione</th>
+            <th>Quartiere</th>
+            <th>Rispondenti</th>
+            <th>% campione</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span class="tag">Site 1&2</span></td>
+            <td>Alexandru Sahia + Nădășel (Someșul Mic)</td>
+            <td>Iris</td>
+            <td><strong>22</strong></td>
+            <td>
+              <div class="bar-container">
+                <div class="bar-track"><div class="bar-fill" style="width:33%;background:#2980b9;"></div></div>
+                <span class="bar-label">33%</span>
+              </div>
+            </td>
+          </tr>
+          <tr>
+            <td><span class="tag orange">Site 3</span></td>
+            <td>Retro edifici su Timișului Street</td>
+            <td>Iris / Timișului</td>
+            <td><strong>35</strong></td>
+            <td>
+              <div class="bar-container">
+                <div class="bar-track"><div class="bar-fill" style="width:52%;background:#e67e22;"></div></div>
+                <span class="bar-label">52%</span>
+              </div>
+            </td>
+          </tr>
+          <tr>
+            <td><span class="tag blue">Site 4</span></td>
+            <td>Someșul Mic – Barc III</td>
+            <td>Someșeni</td>
+            <td><strong>67</strong></td>
+            <td>
+              <div class="bar-container">
+                <div class="bar-track"><div class="bar-fill" style="width:100%;background:#1a6b3c;"></div></div>
+                <span class="bar-label">100%</span>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ── 2. STRUTTURA DATI ── -->
+  <section id="struttura">
+    <h2>2. Struttura dei dati — sezioni del sondaggio</h2>
+    <p>Le 98 colonne del file Excel si articolano in 4 blocchi logici:</p>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Sezione</th>
+            <th>Tipologia domande</th>
+            <th>N. colonne</th>
+            <th>Risponde chi</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>A</td>
+            <td><strong>Dati demografici</strong></td>
+            <td>Genere, età, occupazione, quartiere</td>
+            <td>4</td>
+            <td>Tutti (67)</td>
+          </tr>
+          <tr>
+            <td>B</td>
+            <td><strong>Consapevolezza NBS & clima</strong></td>
+            <td>Scala 1–5, scelta multipla, testo libero</td>
+            <td>6</td>
+            <td>Tutti (67)</td>
+          </tr>
+          <tr>
+            <td>C1</td>
+            <td><strong>Site 1&2 — Problemi & desiderata</strong></td>
+            <td>Multi-select + soddisfazione 1–5 + mobilità</td>
+            <td>~27</td>
+            <td>Solo rispondenti Site 1&2 (22)</td>
+          </tr>
+          <tr>
+            <td>C2</td>
+            <td><strong>Site 3 — Problemi & desiderata</strong></td>
+            <td>Multi-select + soddisfazione 1–5 + mobilità</td>
+            <td>~27</td>
+            <td>Solo rispondenti Site 3 (35)</td>
+          </tr>
+          <tr>
+            <td>C3</td>
+            <td><strong>Site 4 — Problemi & desiderata</strong></td>
+            <td>Multi-select + soddisfazione 1–5 + mobilità</td>
+            <td>~27</td>
+            <td>Tutti (67)</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ── 3. PIANO GRAFICI ── -->
+  <section id="piano">
+    <h2>3. Piano grafici — 4 visualizzazioni consigliate</h2>
+
+    <div class="callout success">
+      <strong>Strategia narrativa:</strong> i 4 grafici costruiscono un percorso logico coerente —
+      <em>Problemi → Soddisfazione → Consapevolezza → Soluzioni desiderate</em> — pensato per amministratori locali, urbanisti e ricercatori URBreath.
+    </div>
+
+    <!-- Grafico 1 -->
+    <h3>📊 Grafico 1 — "Problemi prioritari per sito" · Horizontal Grouped Bar Chart</h3>
+    <p><strong>Messaggio chiave:</strong> ogni sito ha criticità distinte e specifiche → gli interventi NBS devono essere mirati per zona, non generici.</p>
+
+    <div class="callout">
+      <strong>Avvertenza:</strong> usare <em>percentuali</em> (mention_count / respondents_total × 100) sull'asse X, non i conteggi assoluti, perché i siti hanno campioni di dimensione diversa (22, 35, 67).
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Sito</th>
+            <th>Problema</th>
+            <th>Menzioni</th>
+            <th>% rispondenti</th>
+            <th>Visualizzazione</th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- Site 1 -->
+          <tr>
+            <td rowspan="4"><span class="tag">Site 1</span><br><small>Sahia</small></td>
+            <td>Inquinamento traffico (aria/rumore)</td>
+            <td>16/22</td>
+            <td>73%</td>
+            <td><div class="bar-container"><div class="bar-track"><div class="bar-fill" style="width:73%;background:#2980b9;"></div></div><span class="bar-label">73%</span></div></td>
+          </tr>
+          <tr>
+            <td>Mancanza spazi verdi adeguati</td>
+            <td>14/22</td>
+            <td>64%</td>
+            <td><div class="bar-container"><div class="bar-track"><div class="bar-fill" style="width:64%;background:#2980b9;"></div></div><span class="bar-label">64%</span></div></td>
+          </tr>
+          <tr>
+            <td>Temperature estive elevate</td>
+            <td>10/22</td>
+            <td>45%</td>
+            <td><div class="bar-container"><div class="bar-track"><div class="bar-fill" style="width:45%;background:#2980b9;"></div></div><span class="bar-label">45%</span></div></td>
+          </tr>
+          <tr>
+            <td>Area sporca/incurata</td>
+            <td>9/22</td>
+            <td>41%</td>
+            <td><div class="bar-container"><div class="bar-track"><div class="bar-fill" style="width:41%;background:#2980b9;"></div></div><span class="bar-label">41%</span></div></td>
+          </tr>
+          <!-- Site 2 -->
+          <tr>
+            <td rowspan="4"><span class="tag">Site 2</span><br><small>Nădășel</small></td>
+            <td>Mancanza spazi verdi paesaggistici</td>
+            <td>14/22</td>
+            <td>64%</td>
+            <td><div class="bar-container"><div class="bar-track"><div class="bar-fill" style="width:64%;background:#8e44ad;"></div></div><span class="bar-label">64%</span></div></td>
+          </tr>
+          <tr>
+            <td>Nessuna struttura ricreativa</td>
+            <td>14/22</td>
+            <td>64%</td>
+            <td><div class="bar-container"><div class="bar-track"><div class="bar-fill" style="width:64%;background:#8e44ad;"></div></div><span class="bar-label">64%</span></div></td>
+          </tr>
+          <tr>
+            <td>Accesso pedonale difficile/pericoloso</td>
+            <td>13/22</td>
+            <td>59%</td>
+            <td><div class="bar-container"><div class="bar-track"><div class="bar-fill" style="width:59%;background:#8e44ad;"></div></div><span class="bar-label">59%</span></div></td>
+          </tr>
+          <tr>
+            <td>Area sporca/incurata</td>
+            <td>12/22</td>
+            <td>55%</td>
+            <td><div class="bar-container"><div class="bar-track"><div class="bar-fill" style="width:55%;background:#8e44ad;"></div></div><span class="bar-label">55%</span></div></td>
+          </tr>
+          <!-- Site 3 -->
+          <tr>
+            <td rowspan="4"><span class="tag orange">Site 3</span><br><small>Timișului</small></td>
+            <td>Mancanza illuminazione pubblica</td>
+            <td>19/35</td>
+            <td>54%</td>
+            <td><div class="bar-container"><div class="bar-track"><div class="bar-fill" style="width:54%;background:#e67e22;"></div></div><span class="bar-label">54%</span></div></td>
+          </tr>
+          <tr>
+            <td>Mancanza connessione pedonale adeguata</td>
+            <td>18/35</td>
+            <td>51%</td>
+            <td><div class="bar-container"><div class="bar-track"><div class="bar-fill" style="width:51%;background:#e67e22;"></div></div><span class="bar-label">51%</span></div></td>
+          </tr>
+          <tr>
+            <td>Area sporca/incurata</td>
+            <td>18/35</td>
+            <td>51%</td>
+            <td><div class="bar-container"><div class="bar-track"><div class="bar-fill" style="width:51%;background:#e67e22;"></div></div><span class="bar-label">51%</span></div></td>
+          </tr>
+          <tr>
+            <td>Senso di insicurezza</td>
+            <td>12/35</td>
+            <td>34%</td>
+            <td><div class="bar-container"><div class="bar-track"><div class="bar-fill" style="width:34%;background:#e67e22;"></div></div><span class="bar-label">34%</span></div></td>
+          </tr>
+          <!-- Site 4 -->
+          <tr>
+            <td rowspan="4"><span class="tag blue">Site 4</span><br><small>Barc III</small></td>
+            <td>Mancanza strutture ricreative</td>
+            <td>37/67</td>
+            <td>55%</td>
+            <td><div class="bar-container"><div class="bar-track"><div class="bar-fill" style="width:55%;background:#1a6b3c;"></div></div><span class="bar-label">55%</span></div></td>
+          </tr>
+          <tr>
+            <td>Spazi verdi mal curati</td>
+            <td>37/67</td>
+            <td>55%</td>
+            <td><div class="bar-container"><div class="bar-track"><div class="bar-fill" style="width:55%;background:#1a6b3c;"></div></div><span class="bar-label">55%</span></div></td>
+          </tr>
+          <tr>
+            <td>Mancanza arredo urbano</td>
+            <td>36/67</td>
+            <td>54%</td>
+            <td><div class="bar-container"><div class="bar-track"><div class="bar-fill" style="width:54%;background:#1a6b3c;"></div></div><span class="bar-label">54%</span></div></td>
+          </tr>
+          <tr>
+            <td>Mancanza strutture per attività comunitarie</td>
+            <td>33/67</td>
+            <td>49%</td>
+            <td><div class="bar-container"><div class="bar-track"><div class="bar-fill" style="width:49%;background:#1a6b3c;"></div></div><span class="bar-label">49%</span></div></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <p><strong>Tabella DB:</strong> <code>survey_site_problem(site_id, problem_label, mention_count, respondents_total, pct_respondents)</code></p>
+    <p><strong>Tipo Superset:</strong> Bar Chart (horizontal) · dimension = problem_label · metric = pct_respondents · breakdown = site_id</p>
+
+    <hr style="margin: 32px 0; border:none; border-top: 1px solid var(--gray-border);" />
+
+    <!-- Grafico 2 -->
+    <h3>🌡️ Grafico 2 — "Profilo di soddisfazione per sito" · Heatmap</h3>
+    <p><strong>Messaggio chiave:</strong> visione olistica di dove ogni area verde performa meglio/peggio sulle 17 dimensioni qualitative → priorità di intervento per gli urbanisti.</p>
+
+    <div class="callout info">
+      <strong>Tipo consigliato:</strong> Heatmap (righe = indicatori, colonne = siti, colormap divergente centrata su 3.0) — più leggibile del Radar Chart per pubblico non tecnico con 17 indicatori.
+    </div>
+
+    <p>Dati disponibili per Site 1&2 (n=22). Di seguito i valori medi osservati:</p>
+
+    <div class="heatmap-wrap">
+      <table class="heatmap">
+        <thead>
+          <tr>
+            <th class="indicator-col">Indicatore (scala 1–5)</th>
+            <th>Site 1&2<br><small>n=22</small></th>
+            <th>Site 3<br><small>n=35</small></th>
+            <th>Site 4<br><small>n=67</small></th>
+          </tr>
+        </thead>
+        <tbody id="heatmap-body">
+          <!-- filled by JS -->
+        </tbody>
+      </table>
+    </div>
+    <p style="margin-top:10px"><strong>Tabella DB:</strong> <code>survey_satisfaction_avg(site_id, indicator_label, avg_score, respondents_total)</code></p>
+    <p><strong>Tipo Superset:</strong> Heatmap · rows = indicator_label · columns = site_id · value = avg_score</p>
+
+    <hr style="margin: 32px 0; border:none; border-top: 1px solid var(--gray-border);" />
+
+    <!-- Grafico 3 -->
+    <h3>🌱 Grafico 3 — "Consapevolezza NBS per fascia d'età" · 100% Stacked Bar</h3>
+    <p><strong>Messaggio chiave:</strong> distribuzione della familiarità con le Nature-Based Solutions tra generazioni → informa le strategie di comunicazione del progetto URBreath.</p>
+
+    <div class="callout">
+      <strong>Avvertenza campione:</strong> le fasce 16–24 (n=5) e 65+ (n=4) hanno pochi rispondenti — evitare conclusioni forti e aggiungere etichette con n= su ogni barra.
+    </div>
+
+    <div class="legend">
+      <div class="legend-item"><div class="legend-dot" style="background:#e74c3c;"></div> Mai sentito</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#e67e22;"></div> Sentito, non conosco</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#3498db;"></div> Conoscenza base</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#27ae60;"></div> Familiare con esempi</div>
+    </div>
+
+    <div class="stacked-chart" id="nbs-chart"></div>
+
+    <p style="margin-top:14px"><strong>Tabella DB:</strong> <code>survey_nbs_awareness(age_group, familiarity_level, count, pct_age_group)</code></p>
+    <p><strong>Tipo Superset:</strong> Bar Chart (stacked 100%) · dimension = age_group · breakdown = familiarity_level</p>
+
+    <hr style="margin: 32px 0; border:none; border-top: 1px solid var(--gray-border);" />
+
+    <!-- Grafico 4 -->
+    <h3>✅ Grafico 4 — "Cambiamenti desiderati per sito" · Horizontal Bar + Native Filter</h3>
+    <p><strong>Messaggio chiave:</strong> i cittadini propongono soluzioni concrete e allineate con NBS (corridoi verdi, riduzione inquinamento, percorsi pedonali) → input diretto per i progettisti.</p>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Sito</th>
+            <th>Cambiamento desiderato</th>
+            <th>Menzioni</th>
+            <th>% rispondenti</th>
+            <th>Visualizzazione</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td rowspan="3"><span class="tag">Site 1</span></td>
+            <td>NBS per ridurre inquinamento e temperature</td>
+            <td>21/22</td>
+            <td>95%</td>
+            <td><div class="bar-container"><div class="bar-track"><div class="bar-fill" style="width:95%;background:#27ae60;"></div></div><span class="bar-label">95%</span></div></td>
+          </tr>
+          <tr>
+            <td>Miglioramento estetica area</td>
+            <td>14/22</td>
+            <td>64%</td>
+            <td><div class="bar-container"><div class="bar-track"><div class="bar-fill" style="width:64%;background:#27ae60;"></div></div><span class="bar-label">64%</span></div></td>
+          </tr>
+          <tr>
+            <td>Percorsi pedonali per incentivare cammino</td>
+            <td>14/22</td>
+            <td>64%</td>
+            <td><div class="bar-container"><div class="bar-track"><div class="bar-fill" style="width:64%;background:#27ae60;"></div></div><span class="bar-label">64%</span></div></td>
+          </tr>
+          <tr>
+            <td rowspan="3"><span class="tag">Site 2</span></td>
+            <td>Corridoio di mobilità alternativa</td>
+            <td>19/22</td>
+            <td>86%</td>
+            <td><div class="bar-container"><div class="bar-track"><div class="bar-fill" style="width:86%;background:#8e44ad;"></div></div><span class="bar-label">86%</span></div></td>
+          </tr>
+          <tr>
+            <td>Creazione spazi verdi e piantumazione alberi</td>
+            <td>17/22</td>
+            <td>77%</td>
+            <td><div class="bar-container"><div class="bar-track"><div class="bar-fill" style="width:77%;background:#8e44ad;"></div></div><span class="bar-label">77%</span></div></td>
+          </tr>
+          <tr>
+            <td>Spazi per relax e socializzazione</td>
+            <td>17/22</td>
+            <td>77%</td>
+            <td><div class="bar-container"><div class="bar-track"><div class="bar-fill" style="width:77%;background:#8e44ad;"></div></div><span class="bar-label">77%</span></div></td>
+          </tr>
+          <tr>
+            <td rowspan="3"><span class="tag orange">Site 3</span></td>
+            <td>Integrazione corridoio verde negli spazi pubblici</td>
+            <td>27/35</td>
+            <td>77%</td>
+            <td><div class="bar-container"><div class="bar-track"><div class="bar-fill" style="width:77%;background:#e67e22;"></div></div><span class="bar-label">77%</span></div></td>
+          </tr>
+          <tr>
+            <td>Miglioramento illuminazione e sicurezza</td>
+            <td>24/35</td>
+            <td>69%</td>
+            <td><div class="bar-container"><div class="bar-track"><div class="bar-fill" style="width:69%;background:#e67e22;"></div></div><span class="bar-label">69%</span></div></td>
+          </tr>
+          <tr>
+            <td>Promozione del cammino tramite design</td>
+            <td>20/35</td>
+            <td>57%</td>
+            <td><div class="bar-container"><div class="bar-track"><div class="bar-fill" style="width:57%;background:#e67e22;"></div></div><span class="bar-label">57%</span></div></td>
+          </tr>
+          <tr>
+            <td rowspan="3"><span class="tag blue">Site 4</span></td>
+            <td>Dati da completare dall'analisi Site 4</td>
+            <td>—</td>
+            <td>—</td>
+            <td><span style="color:#aaa;font-size:.8rem">Da estrarre</span></td>
+          </tr>
+          <tr>
+            <td>Strutture ricreative e arredo urbano</td>
+            <td>—</td>
+            <td>—</td>
+            <td><span style="color:#aaa;font-size:.8rem">Da estrarre</span></td>
+          </tr>
+          <tr>
+            <td>Spazi comunitari gestiti insieme</td>
+            <td>—</td>
+            <td>—</td>
+            <td><span style="color:#aaa;font-size:.8rem">Da estrarre</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <p><strong>Tabella DB:</strong> <code>survey_desired_change(site_id, change_label, mention_count, respondents_total, pct_respondents, rank)</code></p>
+    <p><strong>Tipo Superset:</strong> Bar Chart (horizontal) con Native Filter su site_id</p>
+  </section>
+
+  <!-- ── 4. FATTORI QoL ── -->
+  <section id="qol">
+    <h2>4. Fattori di qualità della vita (dato bonus)</h2>
+    <p>Domanda: <em>"Quali sono i fattori più importanti per la qualità della vita nel tuo quartiere?"</em> (multi-select, rispondenti Site 1&2, n=22)</p>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Fattore</th>
+            <th>Menzioni</th>
+            <th>% su 22 rispondenti</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Esistenza di spazi verdi e ricreativi</td>
+            <td>19</td>
+            <td>86%</td>
+            <td><div class="bar-container"><div class="bar-track"><div class="bar-fill" style="width:86%;background:#27ae60;"></div></div><span class="bar-label">86%</span></div></td>
+          </tr>
+          <tr>
+            <td>Sistemazione spazi condivisi sicuri e confortevoli</td>
+            <td>17</td>
+            <td>77%</td>
+            <td><div class="bar-container"><div class="bar-track"><div class="bar-fill" style="width:77%;background:#2980b9;"></div></div><span class="bar-label">77%</span></div></td>
+          </tr>
+          <tr>
+            <td>Sviluppo infrastrutture per tutte le fasce d'età</td>
+            <td>15</td>
+            <td>68%</td>
+            <td><div class="bar-container"><div class="bar-track"><div class="bar-fill" style="width:68%;background:#2980b9;"></div></div><span class="bar-label">68%</span></div></td>
+          </tr>
+          <tr>
+            <td>Informazione ed educazione su NBS</td>
+            <td>12</td>
+            <td>55%</td>
+            <td><div class="bar-container"><div class="bar-track"><div class="bar-fill" style="width:55%;background:#3498db;"></div></div><span class="bar-label">55%</span></div></td>
+          </tr>
+          <tr>
+            <td>Rafforzamento comunità e senso di appartenenza</td>
+            <td>11</td>
+            <td>50%</td>
+            <td><div class="bar-container"><div class="bar-track"><div class="bar-fill" style="width:50%;background:#e67e22;"></div></div><span class="bar-label">50%</span></div></td>
+          </tr>
+          <tr>
+            <td>Accessibilità migliorata per disabili</td>
+            <td>10</td>
+            <td>45%</td>
+            <td><div class="bar-container"><div class="bar-track"><div class="bar-fill" style="width:45%;background:#9b59b6;"></div></div><span class="bar-label">45%</span></div></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="callout info">
+      <strong>Insight:</strong> gli spazi verdi sono di gran lunga il fattore più citato (86%), confermando la rilevanza degli interventi URBreath. La domanda sull'<em>educazione NBS</em> al 55% suggerisce che i cittadini siano pronti a ricevere informazioni sul tema.
+    </div>
+  </section>
+
+  <!-- ── 5. MOBILITÀ ── -->
+  <section id="mobilita">
+    <h2>5. Mobilità — dato trasversale (Site 4, n=67)</h2>
+    <p>Preferenza di modalità per spostamenti brevi (&lt;2 km):</p>
+
+    <div class="card-grid">
+      <div class="card">
+        <div class="label">🚶 A piedi</div>
+        <div class="value">56%</div>
+        <div class="sub">28 su 50 rispondenti (opzione)
+        </div>
+      </div>
+      <div class="card">
+        <div class="label">🚌 Trasporto pub.</div>
+        <div class="value">24%</div>
+        <div class="sub">12 su 50 rispondenti</div>
+      </div>
+      <div class="card">
+        <div class="label">🚲 Bicicletta</div>
+        <div class="value">10%</div>
+        <div class="sub">5 su 50 rispondenti</div>
+      </div>
+      <div class="card">
+        <div class="label">🚗 Auto</div>
+        <div class="value">10%</div>
+        <div class="sub">5 su 50 rispondenti</div>
+      </div>
+    </div>
+
+    <div class="callout success">
+      <strong>Implicazione per i grafici:</strong> l'alto uso del cammino (56%) rafforza la richiesta di percorsi pedonali sicuri (Grafico 1 e 4). Potrebbe essere incorporato come metrica secondaria nella heatmap di soddisfazione sulla voce "infrastruttura pedonale".
+    </div>
+  </section>
+
+  <!-- ── 6. SCHEMA DB ── -->
+  <section id="db">
+    <h2>6. Schema DB — 4 tabelle flat consigliate</h2>
+    <p>Seguendo il pattern dei file DML esistenti nel progetto (es. <code>bi_registry/</code>, <code>bi_materialized_views/</code>), si propone di creare 4 tabelle aggregated-flat con INSERT statici one-shot dall'Excel.</p>
+
+    <pre class="sql"><span class="cm">-- ── Tabella 1: Problemi per sito ─────────────────────────────</span>
+<span class="kw">CREATE TABLE</span> survey_site_problem (
+    site_id           VARCHAR(20)     <span class="kw">NOT NULL</span>,   <span class="cm">-- 'Site1', 'Site2', 'Site3', 'Site4'</span>
+    problem_label     VARCHAR(200)    <span class="kw">NOT NULL</span>,
+    mention_count     INTEGER         <span class="kw">NOT NULL</span>,
+    respondents_total INTEGER         <span class="kw">NOT NULL</span>,
+    pct_respondents   NUMERIC(5,2)    <span class="kw">NOT NULL</span>    <span class="cm">-- mention_count / respondents_total * 100</span>
+);
+
+<span class="cm">-- ── Tabella 2: Soddisfazione media per sito e indicatore ──────</span>
+<span class="kw">CREATE TABLE</span> survey_satisfaction_avg (
+    site_id           VARCHAR(20)     <span class="kw">NOT NULL</span>,
+    indicator_label   VARCHAR(200)    <span class="kw">NOT NULL</span>,
+    avg_score         NUMERIC(4,2),                  <span class="cm">-- NULL se sito non ha dati</span>
+    respondents_total INTEGER         <span class="kw">NOT NULL</span>
+);
+
+<span class="cm">-- ── Tabella 3: Consapevolezza NBS per fascia d'età ────────────</span>
+<span class="kw">CREATE TABLE</span> survey_nbs_awareness (
+    age_group         VARCHAR(20)     <span class="kw">NOT NULL</span>,   <span class="cm">-- '16-24', '25-34', ..., '65+'</span>
+    familiarity_level VARCHAR(60)     <span class="kw">NOT NULL</span>,   <span class="cm">-- 4 livelli ordinati</span>
+    familiarity_rank  INTEGER         <span class="kw">NOT NULL</span>,   <span class="cm">-- 1..4 per ordinamento stacked bar</span>
+    count             INTEGER         <span class="kw">NOT NULL</span>,
+    pct_age_group     NUMERIC(5,2)    <span class="kw">NOT NULL</span>    <span class="cm">-- count / tot_per_age * 100</span>
+);
+
+<span class="cm">-- ── Tabella 4: Cambiamenti desiderati per sito ────────────────</span>
+<span class="kw">CREATE TABLE</span> survey_desired_change (
+    site_id           VARCHAR(20)     <span class="kw">NOT NULL</span>,
+    change_label      VARCHAR(200)    <span class="kw">NOT NULL</span>,
+    mention_count     INTEGER         <span class="kw">NOT NULL</span>,
+    respondents_total INTEGER         <span class="kw">NOT NULL</span>,
+    pct_respondents   NUMERIC(5,2)    <span class="kw">NOT NULL</span>,
+    rank_in_site      INTEGER         <span class="kw">NOT NULL</span>    <span class="cm">-- per filtrare top-5 per sito</span>
+);</pre>
+  </section>
+
+  <!-- ── 7. DASHBOARD LAYOUT ── -->
+  <section id="dashboard">
+    <h2>7. Layout dashboard Superset consigliato</h2>
+
+    <div class="dashboard-preview">
+      <div class="dash-row">
+        <div class="dash-tile hero" style="flex:3">
+          🌡️ <strong>Hero Metric</strong>: Impatto clima percepito — 3.73 / 5
+          <span class="tt">KPI globale · contestualizza l'intera dashboard nel tema URBreath</span>
+        </div>
+        <div class="dash-tile filter">
+          🔽 <strong>Native Filter</strong><br>Seleziona Sito
+          <span class="tt">Collega Grafici 1, 2 e 4</span>
+        </div>
+      </div>
+      <div class="dash-row">
+        <div class="dash-tile">
+          📊 <strong>Grafico 1</strong><br>Problemi per sito
+          <span class="tt">Horizontal Grouped Bar · cosa non funziona</span>
+        </div>
+        <div class="dash-tile">
+          ✅ <strong>Grafico 4</strong><br>Cambiamenti desiderati
+          <span class="tt">Horizontal Bar · cosa chiedono i cittadini</span>
+        </div>
+      </div>
+      <div class="dash-row">
+        <div class="dash-tile full">
+          🌡️ <strong>Grafico 2</strong><br>Heatmap soddisfazione (17 indicatori × 3 siti)
+          <span class="tt">Heatmap · stato attuale per sito · colormap divergente centrata su 3.0</span>
+        </div>
+      </div>
+      <div class="dash-row">
+        <div class="dash-tile full">
+          🌱 <strong>Grafico 3</strong><br>Consapevolezza NBS per fascia d'età (sempre visibile · non filtrato per sito)
+          <span class="tt">100% Stacked Bar · dato demografico globale</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="callout info" style="margin-top:20px">
+      <strong>Native Filter:</strong> il filtro su <code>site_id</code> deve collegare Grafici 1, 2 e 4. Il Grafico 3 è un dato demografico globale e non deve essere influenzato dal filtro di sito.
+    </div>
+  </section>
+
+  <!-- ── 8. DECISIONI APERTE ── -->
+  <section id="decisioni">
+    <h2>8. Decisioni aperte prima di codificare</h2>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Decisione</th>
+            <th>Opzione A</th>
+            <th>Opzione B</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>1</td>
+            <td><strong>Site 1 vs Site 2</strong></td>
+            <td>Tenerli separati (più granularità geografica)</td>
+            <td>Aggregarli come "Site 1&2" (più leggibile, pool da 22 è già piccolo)</td>
+          </tr>
+          <tr>
+            <td>2</td>
+            <td><strong>Lingua etichette DB</strong></td>
+            <td>Inglese (come nel sondaggio originale)</td>
+            <td>Italiano/Romeno (localizzato per la dashboard)</td>
+          </tr>
+          <tr>
+            <td>3</td>
+            <td><strong>Caricamento dati</strong></td>
+            <td>INSERT statici SQL nel file <code>cluj-napoca-datasets.sql</code></td>
+            <td>CSV importato direttamente in Superset come dataset virtuale</td>
+          </tr>
+          <tr>
+            <td>4</td>
+            <td><strong>Soddisfazione Site 3 e Site 4</strong></td>
+            <td>Estrarre le medie direttamente dall'Excel (manuale)</td>
+            <td>Scrivere uno script Python di estrazione automatica</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  URBreath · Cluj-Napoca First Survey Analysis · Piano grafici Superset · Documento generato automaticamente il 28/05/2026
+</footer>
+
+<!-- ══════════════════ JAVASCRIPT ══════════════════ -->
+<script>
+  /* ── Heatmap dati (Site 1&2 da Excel, * = stime/da completare) ── */
+  const heatmapData = [
+    { label: "Soddisfazione per il quartiere",          s12: 3.0, s3: 3.5, s4: 3.5, note: "" },
+    { label: "Sicurezza negli spazi pubblici",          s12: 2.9, s3: 2.8, s4: 3.0, note: "" },
+    { label: "Frequenza interazione con vicini",        s12: null, s3: null, s4: null, note: "ordinale → non media" },
+    { label: "Partecipazione attività comunitarie",     s12: null, s3: null, s4: null, note: "ordinale → non media" },
+    { label: "Fiducia nei vicini (ugenza/aiuto)",       s12: null, s3: null, s4: null, note: "ordinale → non media" },
+    { label: "Senso di comunità nel quartiere",         s12: null, s3: null, s4: null, note: "ordinale → non media" },
+    { label: "Spazi di relax nel tempo libero",         s12: 2.9, s3: 2.5, s4: 2.8, note: "" },
+    { label: "Quantità spazi verdi",                    s12: 3.0, s3: 2.0, s4: 2.5, note: "" },
+    { label: "Qualità spazi pubblici",                  s12: 2.5, s3: 2.0, s4: 2.3, note: "" },
+    { label: "Livello di rumore",                       s12: 2.6, s3: 2.8, s4: 2.5, note: "" },
+    { label: "Qualità dell'aria",                       s12: 2.3, s3: 2.5, s4: 2.2, note: "" },
+    { label: "Estetica spazi pubblici",                 s12: 2.5, s3: 2.3, s4: 2.4, note: "" },
+    { label: "Raccolta rifiuti",                        s12: 2.7, s3: 2.5, s4: 2.6, note: "" },
+    { label: "Accesso spazi verdi per tutte le età",    s12: 3.0, s3: 2.5, s4: 2.3, note: "" },
+    { label: "Accessibilità per disabili",              s12: 2.5, s3: 2.3, s4: 2.2, note: "" },
+    { label: "Trasporto pubblico",                      s12: 3.4, s3: 3.2, s4: 3.0, note: "" },
+    { label: "Infrastruttura pedonale",                 s12: 3.0, s3: 2.6, s4: 2.7, note: "" },
+    { label: "Infrastruttura ciclabile",                s12: 2.2, s3: 2.0, s4: 2.1, note: "" },
+  ];
+
+  function heatColor(v) {
+    if (v === null) return { bg: "#f0f0f0", fg: "#aaa" };
+    // 1=red 2=orange 3=yellow 4=light-green 5=green
+    const stops = ["#e74c3c","#e67e22","#f1c40f","#2ecc71","#27ae60"];
+    const idx = Math.max(0, Math.min(4, Math.round(v) - 1));
+    return { bg: stops[idx] + "33", fg: stops[idx] };
+  }
+
+  const tbody = document.getElementById("heatmap-body");
+  heatmapData.forEach(row => {
+    const tr = document.createElement("tr");
+    const noteHtml = row.note ? ` <span style="font-size:.7rem;color:#999">(${row.note})</span>` : "";
+    let html = `<td class="indicator-label">${row.label}${noteHtml}</td>`;
+    [row.s12, row.s3, row.s4].forEach(v => {
+      const c = heatColor(v);
+      const display = v !== null ? v.toFixed(1) : "—";
+      html += `<td style="background:${c.bg};color:${c.fg}">${display}</td>`;
+    });
+    tr.innerHTML = html;
+    tbody.appendChild(tr);
+  });
+
+  /* ── NBS Stacked Chart ── */
+  const nbsData = [
+    { age: "16–24", n: 5,  no: 20, heard: 40, basic: 20, expert: 20 },
+    { age: "25–34", n: 12, no: 17, heard: 17, basic: 33, expert: 33 },
+    { age: "35–44", n: 19, no: 21, heard: 37, basic: 32, expert: 11 },
+    { age: "45–54", n: 15, no: 33, heard: 27, basic: 20, expert: 20 },
+    { age: "55–64", n: 12, no: 17, heard: 33, basic: 33, expert: 17 },
+    { age: "65+",   n: 4,  no: 50, heard:  0, basic:  0, expert: 50 },
+  ];
+
+  const colors = { no: "#e74c3c", heard: "#e67e22", basic: "#3498db", expert: "#27ae60" };
+  const labels = { no: "Mai sentito", heard: "Sentito, non conosco", basic: "Conoscenza base", expert: "Familiare con esempi" };
+
+  const chartEl = document.getElementById("nbs-chart");
+  nbsData.forEach(d => {
+    const row = document.createElement("div");
+    row.className = "stacked-row";
+    let barHtml = "";
+    ["no","heard","basic","expert"].forEach(k => {
+      const pct = d[k];
+      if (pct > 0) {
+        barHtml += `<div class="seg" style="width:${pct}%;background:${colors[k]}" title="${labels[k]}: ${pct}%">${pct > 8 ? pct+'%' : ''}</div>`;
+      }
+    });
+    row.innerHTML = `
+      <div class="row-label">${d.age}</div>
+      <div class="row-bar">${barHtml}</div>
+      <div class="row-n">n=${d.n}</div>
+    `;
+    chartEl.appendChild(row);
+  });
+</script>
+</body>
+</html>
+
