@@ -1,0 +1,123 @@
+# docker-compose-v6.yml - Stack Superset 6.1.0 per test WSL
+# Porta Superset: 17789  |  Porta urbreath_dev: 5434  |  Frontend: 3001
+
+networks:
+  superset_net_v6:
+    external: true
+
+services:
+
+  # ?? Superset 6.1.0 ????????????????????????????????????????????????
+  superset_v6:
+    build: .
+    container_name: superset_v6
+    ports:
+      - "17789:8088"
+    env_file:
+      - .env.v6
+    environment:
+      - SQLALCHEMY_DATABASE_URI=postgresql+psycopg2://superset:superset@db_v6:5432/superset
+      - DATABASE_HOST=db_v6
+      - DATABASE_PORT=5432
+      - DATABASE_DB=superset
+      - DATABASE_USER=superset
+      - DATABASE_PASSWORD=superset
+      - PYTHONPATH=/app/pythonpath
+    volumes:
+      - superset_home_v6:/app/superset_home
+      - ./assets/superset-logo-horiz.png:/app/superset/static/assets/images/superset-logo-horiz.png
+      - ./superset_config.py:/app/pythonpath/superset_config.py
+    networks:
+      - superset_net_v6
+    depends_on:
+      db_v6:
+        condition: service_healthy
+      redis_v6:
+        condition: service_started
+    entrypoint:
+      - bash
+      - -c
+      - |
+        echo 'Waiting for DB...' &&
+        superset db upgrade &&
+        superset fab create-admin --username admin --firstname Admin --lastname User --email admin@superset.local --password admin 2>/dev/null || true &&
+        superset init &&
+        echo 'Superset 6.1.0 ready!' &&
+        gunicorn --bind 0.0.0.0:8088 --workers 4 --timeout 120 --limit-request-line 0 'superset.app:create_app()'
+    restart: unless-stopped
+
+  # ?? PostgreSQL per metadati Superset (DB fresco) ??????????????????
+  db_v6:
+    image: postgres:16
+    container_name: superset-db-v6
+    environment:
+      POSTGRES_DB: superset
+      POSTGRES_USER: superset
+      POSTGRES_PASSWORD: superset
+    volumes:
+      - db_data_v6:/var/lib/postgresql/data
+    networks:
+      - superset_net_v6
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U superset -d superset"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # ?? Redis ?????????????????????????????????????????????????????????
+  redis_v6:
+    image: redis:7-alpine
+    container_name: redis_v6
+    networks:
+      - superset_net_v6
+
+  # ?? PostgreSQL per dati urbreath_dev (clone dal dump prod) ????????
+  otherdb_v6:
+    image: postgres:16
+    container_name: external-postgres-v6
+    ports:
+      - "5434:5432"
+    environment:
+      POSTGRES_DB: urbreath_dev
+      POSTGRES_USER: external_user
+      POSTGRES_PASSWORD: external_pass
+    volumes:
+      - other_db_data_v6:/var/lib/postgresql/data
+    networks:
+      - superset_net_v6
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U external_user -d urbreath_dev"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # ?? pgAdmin (opzionale, per ispezione DB) ?????????????????????????
+  admindb_v6:
+    image: dpage/pgadmin4
+    container_name: pgadmin_v6
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=admin@urbreath.local
+      - PGADMIN_DEFAULT_PASSWORD=admin
+    ports:
+      - "17710:80"
+    networks:
+      - superset_net_v6
+
+  # ?? Frontend React Embedded ???????????????????????????????????????
+  embeddedsuperset_v6:
+    build: ./urbreath-ds-embedded
+    container_name: embeddedsuperset_v6
+    env_file:
+      - .env.v6
+    ports:
+      - "3001:80"
+    depends_on:
+      - superset_v6
+    networks:
+      - superset_net_v6
+
+volumes:
+  db_data_v6:
+  superset_home_v6:
+  other_db_data_v6:
+

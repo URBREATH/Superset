@@ -1,0 +1,1186 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Guida WSL – Migrazione Superset 4.1.2 → 6.1.0 – URBreath</title>
+  <style>
+    :root {
+      --sys:#1565c0; --sys-l:#e3f2fd; --sys-b:#90caf9;
+      --dev:#2e7d32; --dev-l:#e8f5e9; --dev-b:#a5d6a7;
+      --warn:#e65100; --warn-l:#fff3e0;
+      --danger:#c62828; --danger-l:#ffebee;
+      --ok:#2e7d32; --ok-l:#e8f5e9;
+      --info:#1565c0; --info-l:#e3f2fd;
+      --bg:#f4f6fb; --card:#fff; --border:#dde3ed;
+      --text:#1e1e2e; --muted:#5f6368;
+      --code-bg:#0d1117; --code-fg:#e6edf3;
+    }
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.65}
+
+    header{background:linear-gradient(135deg,#0d47a1,#1976d2,#42a5f5);color:#fff;padding:36px 48px 30px}
+    header h1{font-size:1.85rem;font-weight:700}
+    header .sub{opacity:.85;margin-top:6px;font-size:.98rem}
+    header .pills{margin-top:14px;display:flex;gap:8px;flex-wrap:wrap}
+    header .pill{background:rgba(255,255,255,.18);border-radius:20px;padding:4px 13px;font-size:.78rem}
+
+    nav{background:#fff;border-bottom:1px solid var(--border);padding:0 48px;display:flex;gap:0;overflow-x:auto;position:sticky;top:0;z-index:100;box-shadow:0 1px 4px rgba(0,0,0,.07)}
+    nav a{display:block;padding:12px 14px;color:var(--muted);text-decoration:none;font-size:.85rem;white-space:nowrap;border-bottom:3px solid transparent;transition:all .2s}
+    nav a:hover{color:var(--sys);border-bottom-color:var(--sys)}
+
+    main{max-width:1080px;margin:0 auto;padding:36px 20px 60px}
+
+    .phase{margin-bottom:52px}
+    .phase-hdr{display:flex;align-items:center;gap:14px;margin-bottom:22px;padding-bottom:12px;border-bottom:2px solid var(--border)}
+    .pnum{width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:1.1rem;color:#fff;flex-shrink:0}
+
+    .phase-title{font-size:1.3rem;font-weight:700}
+    .phase-sub{font-size:.86rem;color:var(--muted);margin-top:2px}
+
+    .task{border-radius:10px;border:1px solid;padding:20px 22px;margin-bottom:14px}
+    .task.sys{background:var(--sys-l);border-color:var(--sys-b)}
+    .task.dev{background:var(--dev-l);border-color:var(--dev-b)}
+    .task.both{background:#f3e5f5;border-color:#ce93d8}
+
+    .task-hdr{display:flex;align-items:flex-start;gap:10px;margin-bottom:10px}
+    .tbadge{font-size:.72rem;font-weight:700;border-radius:20px;padding:3px 10px;white-space:nowrap;flex-shrink:0;margin-top:2px}
+    .bs{background:var(--sys);color:#fff}
+    .bd{background:var(--dev);color:#fff}
+    .bb{background:#7b1fa2;color:#fff}
+    .task-title{font-weight:700;font-size:.98rem}
+    .task-desc{font-size:.88rem;color:#333;margin-bottom:10px}
+
+    pre,code{font-family:'Cascadia Code','Fira Code',Consolas,monospace}
+    .cb{background:var(--code-bg);color:var(--code-fg);border-radius:9px;padding:18px 20px;overflow-x:auto;font-size:.8rem;line-height:1.8;margin:10px 0;position:relative}
+    .cb .cm{color:#8b949e}
+    .cb .kw{color:#ff7b72}
+    .cb .st{color:#a5d6ff}
+    .cb .va{color:#79c0ff}
+    .cb .ok{color:#7ee787}
+    .file-label{position:absolute;top:10px;right:14px;font-size:.7rem;background:rgba(255,255,255,.1);border-radius:4px;padding:2px 8px;color:#8b949e}
+
+    .alert{border-radius:8px;padding:12px 16px;margin:10px 0;border-left:4px solid;font-size:.87rem}
+    .a-info{background:var(--info-l);border-color:var(--info)}
+    .a-ok{background:var(--ok-l);border-color:var(--ok)}
+    .a-warn{background:var(--warn-l);border-color:var(--warn)}
+    .a-danger{background:var(--danger-l);border-color:var(--danger)}
+
+    .fref{display:inline-block;background:#e8eef7;border:1px solid var(--border);border-radius:4px;padding:1px 7px;font-family:monospace;font-size:.8rem;color:#1a237e}
+
+    table{width:100%;border-collapse:collapse;font-size:.87rem;margin:10px 0}
+    th{background:#e8eef7;padding:9px 12px;border:1px solid var(--border);font-weight:600;text-align:left}
+    td{padding:8px 12px;border:1px solid var(--border);vertical-align:top}
+    tr:nth-child(even) td{background:#f9fafc}
+
+    .legend{display:flex;gap:18px;flex-wrap:wrap;padding:14px 18px;background:#fff;border:1px solid var(--border);border-radius:10px;margin-bottom:28px;font-size:.88rem}
+    .ld{width:13px;height:13px;border-radius:3px;display:inline-block;margin-right:6px;vertical-align:middle}
+
+    .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+    .card{background:#fff;border:1px solid var(--border);border-radius:10px;padding:18px 20px;margin-bottom:14px}
+
+    ol.steps{margin-left:20px;font-size:.9rem;line-height:2.2}
+    ul.check{list-style:none;margin:0}
+    ul.check li{padding:4px 0;font-size:.88rem}
+    ul.check li::before{content:'☐ ';font-size:1rem}
+
+    .tag{display:inline-block;border-radius:20px;padding:2px 10px;font-size:.75rem;font-weight:700;margin:2px}
+    .tg{background:#e8f5e9;color:#2e7d32}
+    .to{background:#fff3e0;color:#e65100}
+    .tr{background:#ffebee;color:#c62828}
+    .tb{background:#e3f2fd;color:#1565c0}
+
+    footer{text-align:center;padding:28px;color:var(--muted);font-size:.82rem;border-top:1px solid var(--border);margin-top:40px}
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>🐧 Migrazione Superset 4.1.2 → 6.1.0 su WSL – Guida Pratica Completa</h1>
+  <div class="sub">Tutti i comandi bash, tutti i file modificati, passo dopo passo</div>
+  <div class="pills">
+    <span class="pill">📅 10 Giugno 2026</span>
+    <span class="pill">🐧 WSL2 Ubuntu</span>
+    <span class="pill">🐳 Docker in WSL</span>
+    <span class="pill">🗄️ PostgreSQL 16</span>
+    <span class="pill">⚛️ React Embedded SDK</span>
+  </div>
+</header>
+
+<nav>
+  <a href="#arch">Architettura WSL</a>
+  <a href="#fase0">0 · Setup WSL</a>
+  <a href="#fase1">1 · Copia File</a>
+  <a href="#fase2">2 · Backup & Export</a>
+  <a href="#fase3">3 · Nuovi File</a>
+  <a href="#fase4">4 · Avvio v6</a>
+  <a href="#fase5">5 · DB Connection</a>
+  <a href="#fase6">6 · Import Dashboard</a>
+  <a href="#fase7">7 · Frontend React</a>
+  <a href="#fase8">8 · Verifica</a>
+</nav>
+
+<main>
+
+  <!-- LEGENDA -->
+  <div class="legend" style="margin-top:12px;">
+    <span><span class="ld" style="background:var(--sys)"></span><strong>🔵 SYS</strong> – Sistemistico: Docker, rete, volumi, bash</span>
+    <span><span class="ld" style="background:var(--dev)"></span><strong>🟢 DEV</strong> – Sviluppo: modifica file sorgenti, config, React</span>
+    <span><span class="ld" style="background:#7b1fa2"></span><strong>🟣 ENTRAMBI</strong> – Step misto</span>
+  </div>
+
+  <!-- ======================== ARCHITETTURA ======================== -->
+  <section class="phase" id="arch">
+    <div class="phase-hdr">
+      <div class="pnum" style="background:#546e7a;">ℹ</div>
+      <div>
+        <div class="phase-title">Architettura del Test su WSL</div>
+        <div class="phase-sub">Come sarà organizzato lo stack nel WSL rispetto alla produzione Windows</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <table>
+        <tr><th>Componente</th><th>Produzione (Windows Docker)</th><th>Test WSL</th></tr>
+        <tr><td>Superset</td><td>4.1.2 – porta <strong>17788</strong></td><td>6.1.0 – porta <strong>17789</strong></td></tr>
+        <tr><td>DB Metadati Superset</td><td>postgres:16 – container <code>superset-db</code></td><td>postgres:16 – container <code>superset-db-v6</code> <span class="tag tg">NUOVO volume</span></td></tr>
+        <tr><td>DB Dati (urbreath_dev)</td><td>postgres:16 – porta <strong>5433</strong></td><td>postgres:16 – porta <strong>5434</strong> (clone dal dump)</td></tr>
+        <tr><td>Redis</td><td>redis:latest</td><td>redis:latest</td></tr>
+        <tr><td>Frontend React</td><td>porta <strong>3000</strong></td><td>porta <strong>3001</strong></td></tr>
+        <tr><td>Docker network</td><td><code>superset_network_dev</code></td><td><code>superset_net_v6</code></td></tr>
+      </table>
+    </div>
+
+    <div class="alert a-info">
+      ℹ️ <strong>Strategia:</strong> Il WSL ha il suo Docker completamente separato da Windows Docker Desktop.
+      I container Windows sono irraggiungibili direttamente dal WSL via nome container.
+      Per i dati di <code>urbreath_dev</code> faremo un dump da Windows e lo caricheremo nel WSL.
+      Accesso dal browser Windows: <code>http://localhost:17789</code> (WSL2 espone le porte automaticamente su Windows).
+    </div>
+
+    <div class="card">
+      <h3 style="margin-bottom:12px;">File che verranno creati/modificati</h3>
+      <table>
+        <tr><th>File</th><th>Azione</th><th>Dove</th></tr>
+        <tr><td><code>Dockerfile</code></td><td><span class="tag to">MODIFICATO</span></td><td>Radice progetto</td></tr>
+        <tr><td><code>superset_config.py</code></td><td><span class="tag to">MODIFICATO</span></td><td>Radice progetto</td></tr>
+        <tr><td><code>docker-compose-v6.yml</code></td><td><span class="tag tg">NUOVO</span></td><td>Radice progetto</td></tr>
+        <tr><td><code>.env.v6</code></td><td><span class="tag tg">NUOVO</span></td><td>Radice progetto</td></tr>
+        <tr><td><code>urbreath-ds-embedded/package.json</code></td><td><span class="tag to">MODIFICATO</span></td><td>Frontend React</td></tr>
+        <tr><td><code>urbreath-ds-embedded/src/components/SupersetEmbed.jsx</code></td><td><span class="tag to">MODIFICATO</span></td><td>Frontend React</td></tr>
+      </table>
+    </div>
+  </section>
+
+  <!-- ======================== FASE 0 ======================== -->
+  <section class="phase" id="fase0">
+    <div class="phase-hdr">
+      <div class="pnum" style="background:#546e7a;">0</div>
+      <div>
+        <div class="phase-title">Setup Prerequisiti WSL</div>
+        <div class="phase-sub">Verificare e installare Docker nel WSL2</div>
+      </div>
+    </div>
+
+    <div class="task sys">
+      <div class="task-hdr"><span class="tbadge bs">SYS</span><div class="task-title">0.1 – Aprire il terminale WSL e verificare la distribuzione</div></div>
+      <div class="cb">
+        <span class="file-label">WSL bash</span>
+<span class="cm"># Da Windows: Start → digita "wsl" oppure apri Windows Terminal e seleziona Ubuntu</span>
+<span class="cm"># Verifica distro e versione</span>
+cat /etc/os-release | grep -E "^NAME|^VERSION"
+
+<span class="cm"># Verifica WSL2 (deve essere WSL version 2)</span>
+<span class="cm"># Da PowerShell Windows: wsl --list --verbose</span>
+      </div>
+    </div>
+
+    <div class="task sys">
+      <div class="task-hdr"><span class="tbadge bs">SYS</span><div class="task-title">0.2 – Installare Docker Engine nel WSL (se non presente)</div></div>
+      <div class="task-desc">⚠️ Se usi Docker Desktop for Windows con integrazione WSL, Docker è già disponibile nel WSL. Verifica con <code>docker --version</code>.</div>
+      <div class="cb">
+        <span class="file-label">WSL bash</span>
+<span class="cm"># Verifica se Docker è già installato</span>
+docker --version
+docker compose version
+
+<span class="cm"># Se NON è installato, installare Docker Engine in WSL:</span>
+sudo apt-get update
+sudo apt-get install -y ca-certificates curl gnupg lsb-release
+
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg | \
+  sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
+
+echo "deb [arch=$(dpkg --print-architecture) \
+  signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] \
+  https://download.docker.com/linux/ubuntu \
+  $(lsb_release -cs) stable" | \
+  sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+
+sudo apt-get update
+sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin
+
+<span class="cm"># Aggiunge il tuo utente al gruppo docker (niente sudo)</span>
+sudo usermod -aG docker $USER
+newgrp docker
+
+<span class="cm"># Avvia il daemon Docker</span>
+sudo service docker start
+
+<span class="cm"># Verifica</span>
+docker run hello-world
+      </div>
+      <div class="alert a-ok">✅ Se Docker Desktop for Windows ha l'opzione "Use WSL 2 based engine" abilitata nelle Settings, <code>docker</code> funziona già dentro WSL senza installazione aggiuntiva.</div>
+    </div>
+
+    <div class="task sys">
+      <div class="task-hdr"><span class="tbadge bs">SYS</span><div class="task-title">0.3 – Creare la Docker network per il WSL</div></div>
+      <div class="cb">
+        <span class="file-label">WSL bash</span>
+<span class="cm"># Crea la rete Docker (usata come external nel docker-compose-v6.yml)</span>
+docker network create superset_net_v6
+
+<span class="cm"># Verifica</span>
+docker network ls | grep superset_net_v6
+      </div>
+    </div>
+
+  </section>
+
+  <!-- ======================== FASE 1 ======================== -->
+  <section class="phase" id="fase1">
+    <div class="phase-hdr">
+      <div class="pnum" style="background:#1565c0;">1</div>
+      <div>
+        <div class="phase-title">Copia del Progetto da Windows a WSL</div>
+        <div class="phase-sub">Portare i file sorgenti nel filesystem WSL</div>
+      </div>
+    </div>
+
+    <div class="task sys">
+      <div class="task-hdr"><span class="tbadge bs">SYS</span><div class="task-title">1.1 – Copiare il progetto nel home di WSL</div></div>
+      <div class="task-desc">Dal filesystem Windows, il progetto è in <code>C:\Progetti\URBreath\Superset</code>.
+        In WSL questo path è accessibile come <code>/mnt/c/Progetti/URBreath/Superset</code>.</div>
+      <div class="cb">
+        <span class="file-label">WSL bash</span>
+<span class="cm"># Crea la cartella di lavoro nel home WSL</span>
+mkdir -p ~/urbreath/superset
+
+<span class="cm"># Copia tutto il progetto (ESCLUSI i volumi Docker e i node_modules)</span>
+rsync -av \
+  --exclude='node_modules' \
+  --exclude='.git' \
+  --exclude='target' \
+  /mnt/c/Progetti/URBreath/Superset/ \
+  ~/urbreath/superset/
+
+<span class="cm"># Entra nella cartella di lavoro</span>
+cd ~/urbreath/superset
+ls -la
+
+<span class="cm"># Crea cartella backups</span>
+mkdir -p backups/pre-migration/dashboards
+      </div>
+      <div class="alert a-info">ℹ️ <strong>Perché copiare nel filesystem WSL e non lavorare da /mnt/c/?</strong>
+      Le performance di Docker con volumi su <code>/mnt/c/</code> (filesystem Windows) sono molto peggiori
+      rispetto al filesystem nativo ext4 di WSL. Lavorare in <code>~/</code> è molto più veloce.</div>
+    </div>
+
+  </section>
+
+  <!-- ======================== FASE 2 ======================== -->
+  <section class="phase" id="fase2">
+    <div class="phase-hdr">
+      <div class="pnum" style="background:#c62828;">2</div>
+      <div>
+        <div class="phase-title">Backup e Export da Superset 4.1.2 (Windows)</div>
+        <div class="phase-sub">Eseguito sui container Windows Docker – OBBLIGATORIO prima di procedere</div>
+      </div>
+    </div>
+
+    <div class="alert a-danger" style="margin-bottom:16px;">
+      🔴 <strong>Questi comandi si eseguono su PowerShell Windows</strong>, non nel WSL, perché i container prod girano su Docker Desktop Windows.
+    </div>
+
+    <div class="task sys">
+      <div class="task-hdr"><span class="tbadge bs">SYS · PowerShell Windows</span><div class="task-title">2.1 – Backup DB metadati Superset (superset)</div></div>
+      <div class="cb">
+        <span class="file-label">PowerShell Windows</span>
+<span class="cm"># Dump dal container superset-db (Windows Docker)</span>
+docker exec superset-db pg_dump `
+  -U superset `
+  -d superset `
+  -F c `
+  -f /tmp/superset_backup.dump
+
+<span class="cm"># Copia nella cartella progetto</span>
+docker cp superset-db:/tmp/superset_backup.dump `
+  C:\Progetti\URBreath\Superset\backups\pre-migration\superset_backup.dump
+
+<span class="cm"># Verifica che il file non sia 0 byte</span>
+Get-Item C:\Progetti\URBreath\Superset\backups\pre-migration\superset_backup.dump | Select-Object Length
+      </div>
+    </div>
+
+    <div class="task sys">
+      <div class="task-hdr"><span class="tbadge bs">SYS · PowerShell Windows</span><div class="task-title">2.2 – Backup DB dati urbreath_dev</div></div>
+      <div class="cb">
+        <span class="file-label">PowerShell Windows</span>
+docker exec external-postgres pg_dump `
+  -U external_user `
+  -d urbreath_dev `
+  -F p `
+  -f /tmp/urbreath_backup.sql
+
+docker cp external-postgres:/tmp/urbreath_backup.sql `
+  C:\Progetti\URBreath\Superset\backups\pre-migration\urbreath_backup.sql
+
+<span class="cm"># Verifica dimensione</span>
+Get-Item C:\Progetti\URBreath\Superset\backups\pre-migration\urbreath_backup.sql | Select-Object Length
+      </div>
+    </div>
+
+    <div class="task dev">
+      <div class="task-hdr"><span class="tbadge bd">DEV · Browser / UI Superset 4.1.2</span><div class="task-title">2.3 – Export delle 4 Dashboard come ZIP</div></div>
+      <div class="task-desc">Aprire <strong>http://localhost:17788/dashboard/list</strong> nel browser Windows.</div>
+      <ol class="steps">
+        <li>Per ogni dashboard (Madrid, Cluj-Napoca, Tallinn, Leuven): click <strong>⋮ → Export</strong></li>
+        <li>Salvare i 4 file ZIP in: <code>C:\Progetti\URBreath\Superset\backups\pre-migration\dashboards\</code></li>
+        <li>Annotare i nomi dei file generati (es. <code>dashboard_export_madrid_20260610.zip</code>)</li>
+      </ol>
+      <div class="alert a-info">ℹ️ Ogni ZIP include automaticamente le chart e la definizione del dataset collegato. Non serve esportare chart/dataset separatamente.</div>
+    </div>
+
+    <div class="task sys">
+      <div class="task-hdr"><span class="tbadge bs">SYS · WSL bash</span><div class="task-title">2.4 – Copiare i backup nel WSL</div></div>
+      <div class="cb">
+        <span class="file-label">WSL bash</span>
+<span class="cm"># I backup sono già nella cartella Windows, accessibile da WSL via /mnt/c/</span>
+cp /mnt/c/Progetti/URBreath/Superset/backups/pre-migration/urbreath_backup.sql \
+   ~/urbreath/superset/backups/pre-migration/
+
+cp /mnt/c/Progetti/URBreath/Superset/backups/pre-migration/dashboards/*.zip \
+   ~/urbreath/superset/backups/pre-migration/dashboards/
+
+ls ~/urbreath/superset/backups/pre-migration/dashboards/
+      </div>
+    </div>
+
+  </section>
+
+  <!-- ======================== FASE 3 ======================== -->
+  <section class="phase" id="fase3">
+    <div class="phase-hdr">
+      <div class="pnum" style="background:#2e7d32;">3</div>
+      <div>
+        <div class="phase-title">Creazione e Modifica dei File Sorgenti</div>
+        <div class="phase-sub">Tutti i file da creare o modificare nel WSL – contenuto esatto</div>
+      </div>
+    </div>
+
+    <!-- 3.1 DOCKERFILE -->
+    <div class="task dev">
+      <div class="task-hdr"><span class="tbadge bd">DEV</span><div class="task-title">3.1 – Modificare <code>Dockerfile</code> → versione 6.1.0</div></div>
+      <div class="task-desc">File: <span class="fref">~/urbreath/superset/Dockerfile</span></div>
+      <div class="cb">
+        <span class="file-label">Dockerfile</span>
+<span class="cm"># Sostituire l'intero contenuto del Dockerfile con questo:</span>
+cat &gt; ~/urbreath/superset/Dockerfile &lt;&lt;'EOF'
+FROM apache/superset:6.1.0
+USER root
+
+RUN pip install --upgrade pip
+
+# psycopg2-binary: driver PostgreSQL (necessario)
+# flask-cors: incluso in Superset 6.x ma lo reinstalliamo per sicurezza
+# Nota: flask-talisman NON va più installato manualmente (già in Superset 6.x)
+RUN pip install --no-cache-dir psycopg2-binary
+
+USER superset
+EOF
+      </div>
+    </div>
+
+    <!-- 3.2 superset_config.py -->
+    <div class="task dev">
+      <div class="task-hdr"><span class="tbadge bd">DEV</span><div class="task-title">3.2 – Riscrivere <code>superset_config.py</code> per Superset 6.x</div></div>
+      <div class="task-desc">
+        File: <span class="fref">~/urbreath/superset/superset_config.py</span><br>
+        <strong>Rimozioni obbligatorie rispetto alla versione 4.x:</strong><br>
+        &bull; <code>from flask_talisman import Talisman</code> → causa ImportError all'avvio in 6.x<br>
+        &bull; <code>Talisman(...)</code> → causa errore perché l'app Flask non esiste ancora quando viene letto questo file
+      </div>
+      <div class="cb">
+        <span class="file-label">superset_config.py</span>
+cat &gt; ~/urbreath/superset/superset_config.py &lt;&lt;'EOF'
+# superset_config.py – compatibile con Apache Superset 6.x
+# NOTA: rimosso "from flask_talisman import Talisman" e la chiamata Talisman()
+# perché in Superset 6.x Talisman è gestito internamente tramite TALISMAN_ENABLED
+
+SECRET_KEY = "eRrH2s+nvWP1oiiViUELBCuXsUHr0TRf4VlRolsDkzss5qRviF2n08jY"
+SUPERSET_ENV = "production"
+SUPERSET_LOAD_EXAMPLES = "no"
+APP_NAME = "URBreath"
+
+SQLALCHEMY_DATABASE_URI = "postgresql+psycopg2://superset:superset@db_v6:5432/superset"
+MAPBOX_API_KEY = "pk.eyJ1IjoiZXNwbzMiLCJhIjoiY21iN3V6eXdwMDAyNDJscXQ5cnR2MjZ0ayJ9.kMZ3pI6upOC4NEuC5H-e0g"
+PYTHONPATH = "/app/pythonpath"
+
+# Ruolo pubblico per embedding (solo dev/test – in prod restringere)
+AUTH_ROLE_PUBLIC = "Admin"
+
+# CSRF disabilitato per le chiamate embedded
+WTF_CSRF_ENABLED = False
+
+# Feature flags
+FEATURE_FLAGS = {
+    "ALERT_REPORTS": True,
+    "EMBEDDED_SUPERSET": True,
+}
+
+# Talisman: in Superset 6.x si disabilita tramite questa variabile
+# NON usare Talisman() direttamente – causerebbe un errore all'avvio
+TALISMAN_ENABLED = False
+
+# Permette embedding in iframe da qualsiasi origine
+HTTP_HEADERS = {"X-Frame-Options": "ALLOWALL"}
+
+# CORS
+ENABLE_CORS = True
+ENABLE_PROXY_FIX = True
+CORS_OPTIONS = {
+    "supports_credentials": True,
+    "allow_headers": ["*"],
+    "expose_headers": ["*"],
+    "resources": ["/*"],
+    "origins": ["*"],
+}
+
+SUPERSET_WEBSERVER_TIMEOUT = 300
+SQLLAB_ASYNC_TIME_LIMIT_SEC = 300
+GUEST_ROLE_NAME = "Gamma"
+EOF
+      </div>
+    </div>
+
+    <!-- 3.3 .env.v6 -->
+    <div class="task dev">
+      <div class="task-hdr"><span class="tbadge bd">DEV</span><div class="task-title">3.3 – Creare il file <code>.env.v6</code></div></div>
+      <div class="task-desc">File: <span class="fref">~/urbreath/superset/.env.v6</span> – variabili d'ambiente per il nuovo stack</div>
+      <div class="cb">
+        <span class="file-label">.env.v6</span>
+cat &gt; ~/urbreath/superset/.env.v6 &lt;&lt;'EOF'
+# Superset
+SUPERSET_ENV=production
+SUPERSET_LOAD_EXAMPLES=no
+SUPERSET_ADMIN_USERNAME=admin
+SUPERSET_ADMIN_EMAIL=admin@superset.local
+SUPERSET_ADMIN_PASSWORD=admin
+SUPERSET_ADMIN_FIRSTNAME=Admin
+SUPERSET_ADMIN_LASTNAME=User
+
+# React frontend – URL raggiungibile DAL BROWSER (porta WSL esposta su Windows)
+# ATTENZIONE: questo URL viene usato dal browser dell'utente per le chiamate API
+REACT_APP_SUPERSET_URL=http://localhost:17789
+
+# Dashboard UUID – da aggiornare DOPO l'import nella Fase 6
+REACT_APP_DASHBOARD_MADRID=PLACEHOLDER_MADRID
+REACT_APP_DASHBOARD_CLUJ=PLACEHOLDER_CLUJ
+REACT_APP_DASHBOARD_TALLINN=PLACEHOLDER_TALLINN
+REACT_APP_DASHBOARD_LEUVEN=PLACEHOLDER_LEUVEN
+REACT_APP_DASHBOARD_MADRID_LINK=http://localhost:17789/superset/dashboard/PLACEHOLDER_MADRID
+REACT_APP_DASHBOARD_CLUJ_LINK=http://localhost:17789/superset/dashboard/PLACEHOLDER_CLUJ
+REACT_APP_DASHBOARD_LEUVEN_LINK=http://localhost:17789/superset/dashboard/PLACEHOLDER_LEUVEN
+REACT_APP_DASHBOARD_TALLINN_LINK=http://localhost:17789/superset/dashboard/PLACEHOLDER_TALLINN
+EOF
+      </div>
+      <div class="alert a-warn">⚠️ I valori <code>PLACEHOLDER_*</code> vanno sostituiti con i veri UUID nella <strong>Fase 6</strong>, dopo l'import delle dashboard.</div>
+    </div>
+
+    <!-- 3.4 docker-compose-v6.yml -->
+    <div class="task sys">
+      <div class="task-hdr"><span class="tbadge bs">SYS</span><div class="task-title">3.4 – Creare <code>docker-compose-v6.yml</code></div></div>
+      <div class="task-desc">File: <span class="fref">~/urbreath/superset/docker-compose-v6.yml</span></div>
+      <div class="cb">
+        <span class="file-label">docker-compose-v6.yml</span>
+cat &gt; ~/urbreath/superset/docker-compose-v6.yml &lt;&lt;'EOF'
+# docker-compose-v6.yml – Stack Superset 6.1.0 per test WSL
+# Porta Superset: 17789  |  Porta urbreath_dev: 5434  |  Frontend: 3001
+
+networks:
+  superset_net_v6:
+    external: true
+
+services:
+
+  # ── Superset 6.1.0 ────────────────────────────────────────────────
+  superset_v6:
+    build: .
+    container_name: superset_v6
+    ports:
+      - "17789:8088"
+    env_file:
+      - .env.v6
+    environment:
+      - SQLALCHEMY_DATABASE_URI=postgresql+psycopg2://superset:superset@db_v6:5432/superset
+      - PYTHONPATH=/app/pythonpath
+    volumes:
+      - superset_home_v6:/app/superset_home
+      - ./assets/superset-logo-horiz.png:/app/superset/static/assets/images/superset-logo-horiz.png
+      - ./superset_config.py:/app/pythonpath/superset_config.py
+    networks:
+      - superset_net_v6
+    depends_on:
+      db_v6:
+        condition: service_healthy
+      redis_v6:
+        condition: service_started
+    entrypoint: >
+      bash -c "
+        echo '⏳ Waiting for DB...' &&
+        superset db upgrade &&
+        superset fab create-admin
+          --username admin
+          --firstname Admin
+          --lastname User
+          --email admin@superset.local
+          --password admin 2>/dev/null || true &&
+        superset init &&
+        echo '✅ Superset 6.1.0 ready!' &&
+        gunicorn
+          --bind 0.0.0.0:8088
+          --workers 4
+          --timeout 120
+          --limit-request-line 0
+          'superset.app:create_app()'
+      "
+    restart: unless-stopped
+
+  # ── PostgreSQL per metadati Superset (DB fresco) ──────────────────
+  db_v6:
+    image: postgres:16
+    container_name: superset-db-v6
+    environment:
+      POSTGRES_DB: superset
+      POSTGRES_USER: superset
+      POSTGRES_PASSWORD: superset
+    volumes:
+      - db_data_v6:/var/lib/postgresql/data
+    networks:
+      - superset_net_v6
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U superset -d superset"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # ── Redis ─────────────────────────────────────────────────────────
+  redis_v6:
+    image: redis:7-alpine
+    container_name: redis_v6
+    networks:
+      - superset_net_v6
+
+  # ── PostgreSQL per dati urbreath_dev (clone dal dump) ─────────────
+  otherdb_v6:
+    image: postgres:16
+    container_name: external-postgres-v6
+    ports:
+      - "5434:5432"
+    environment:
+      POSTGRES_DB: urbreath_dev
+      POSTGRES_USER: external_user
+      POSTGRES_PASSWORD: external_pass
+    volumes:
+      - other_db_data_v6:/var/lib/postgresql/data
+    networks:
+      - superset_net_v6
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U external_user -d urbreath_dev"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # ── pgAdmin (opzionale) ───────────────────────────────────────────
+  admindb_v6:
+    image: dpage/pgadmin4
+    container_name: pgadmin_v6
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=admin@urbreath.local
+      - PGADMIN_DEFAULT_PASSWORD=admin
+    ports:
+      - "17710:80"
+    networks:
+      - superset_net_v6
+
+  # ── Frontend React Embedded ───────────────────────────────────────
+  embeddedsuperset_v6:
+    build: ./urbreath-ds-embedded
+    container_name: embeddedsuperset_v6
+    env_file:
+      - .env.v6
+    ports:
+      - "3001:80"
+    depends_on:
+      - superset_v6
+    networks:
+      - superset_net_v6
+
+volumes:
+  db_data_v6:
+  superset_home_v6:
+  other_db_data_v6:
+EOF
+      </div>
+    </div>
+
+    <!-- 3.5 SupersetEmbed.jsx -->
+    <div class="task dev">
+      <div class="task-hdr"><span class="tbadge bd">DEV</span><div class="task-title">3.5 – Aggiornare <code>SupersetEmbed.jsx</code> per Superset 6.x</div></div>
+      <div class="task-desc">
+        File: <span class="fref">~/urbreath/superset/urbreath-ds-embedded/src/components/SupersetEmbed.jsx</span><br>
+        Modifica: <code>fetchGuestToken</code> deve essere una <strong>funzione async</strong> in 6.x
+        (il SDK la richiama periodicamente per il refresh automatico del token).
+      </div>
+      <div class="cb">
+        <span class="file-label">SupersetEmbed.jsx</span>
+cat &gt; ~/urbreath/superset/urbreath-ds-embedded/src/components/SupersetEmbed.jsx &lt;&lt;'EOF'
+import React, { useEffect, useRef } from "react";
+import axios from "axios";
+import { embedDashboard } from "@superset-ui/embedded-sdk";
+
+function SupersetEmbed({ dashboardId }) {
+  const containerRef = useRef(null);
+
+  useEffect(() => {
+    if (!dashboardId || dashboardId.startsWith("PLACEHOLDER")) return;
+
+    const supersetUrl = process.env.REACT_APP_SUPERSET_URL;
+    const supersetApiUrl = supersetUrl + "/api/v1/security";
+
+    // fetchGuestToken deve essere async in Superset 6.x:
+    // il SDK la richiama automaticamente quando il token sta per scadere
+    const fetchGuestToken = async () => {
+      const loginResp = await axios.post(
+        supersetApiUrl + "/login",
+        {
+          username: "admin",
+          password: "admin",
+          provider: "db",
+          refresh: true,
+        },
+        { headers: { "Content-Type": "application/json" } }
+      );
+      const access_token = loginResp.data["access_token"];
+
+      const guestResp = await axios.post(
+        supersetApiUrl + "/guest_token/",
+        {
+          user: {
+            username: "report-viewer",
+            first_name: "report-viewer",
+            last_name: "report-viewer",
+          },
+          resources: [{ type: "dashboard", id: dashboardId }],
+          rls: [],
+        },
+        { headers: { Authorization: "Bearer " + access_token } }
+      );
+      return guestResp.data["token"];
+    };
+
+    async function loadDashboard() {
+      if (!containerRef.current) return;
+
+      await embedDashboard({
+        id: dashboardId,
+        supersetDomain: supersetUrl,
+        mountPoint: containerRef.current,
+        fetchGuestToken,
+        dashboardUiConfig: { hideTitle: true },
+      });
+
+      // Imposta dimensioni iframe
+      const iframe = containerRef.current.querySelector("iframe");
+      if (iframe) {
+        iframe.style.width = "100%";
+        iframe.style.minHeight = "100vh";
+        iframe.style.border = "none";
+      }
+    }
+
+    loadDashboard().catch(console.error);
+  }, [dashboardId]);
+
+  return <div ref={containerRef} id="superset-container"></div>;
+}
+
+export default SupersetEmbed;
+EOF
+      </div>
+    </div>
+
+    <!-- 3.6 package.json -->
+    <div class="task dev">
+      <div class="task-hdr"><span class="tbadge bd">DEV</span><div class="task-title">3.6 – Aggiornare <code>package.json</code> – SDK Embedded</div></div>
+      <div class="task-desc">
+        File: <span class="fref">~/urbreath/superset/urbreath-ds-embedded/package.json</span><br>
+        La versione <code>^0.2.0</code> non è compatibile con Superset 6.x. Aggiornare all'ultima versione.
+      </div>
+      <div class="cb">
+        <span class="file-label">WSL bash</span>
+cd ~/urbreath/superset/urbreath-ds-embedded
+
+<span class="cm"># Verifica l'ultima versione disponibile</span>
+npm info @superset-ui/embedded-sdk version
+
+<span class="cm"># Aggiorna nel package.json</span>
+npm install @superset-ui/embedded-sdk@latest --save
+
+<span class="cm"># Verifica la versione installata</span>
+cat package.json | grep embedded-sdk
+      </div>
+      <div class="alert a-info">ℹ️ Se npm non è installato in WSL: <code>sudo apt-get install -y nodejs npm</code>.
+      Oppure questo step avviene automaticamente durante il <code>docker build</code> grazie al <code>RUN npm install</code> nel Dockerfile React.</div>
+    </div>
+
+  </section>
+
+  <!-- ======================== FASE 4 ======================== -->
+  <section class="phase" id="fase4">
+    <div class="phase-hdr">
+      <div class="pnum" style="background:#1565c0;">4</div>
+      <div>
+        <div class="phase-title">Build e Avvio dello Stack Superset 6.1.0</div>
+        <div class="phase-sub">Prima esecuzione – le migrazioni Alembic vengono applicate automaticamente</div>
+      </div>
+    </div>
+
+    <div class="task sys">
+      <div class="task-hdr"><span class="tbadge bs">SYS</span><div class="task-title">4.1 – Build dell'immagine Docker Superset 6.1.0</div></div>
+      <div class="cb">
+        <span class="file-label">WSL bash</span>
+cd ~/urbreath/superset
+
+<span class="cm"># Build solo dell'immagine Superset (può richiedere 3-5 minuti la prima volta)</span>
+docker compose -f docker-compose-v6.yml build superset_v6
+
+<span class="cm"># Verifica che l'immagine sia stata costruita</span>
+docker images | grep superset
+<span class="cm"># Dovrebbe apparire: superset-superset_v6 (o nome simile)</span>
+      </div>
+    </div>
+
+    <div class="task sys">
+      <div class="task-hdr"><span class="tbadge bs">SYS</span><div class="task-title">4.2 – Avviare DB e Redis prima di Superset</div></div>
+      <div class="cb">
+        <span class="file-label">WSL bash</span>
+<span class="cm"># Avvia solo il DB e Redis prima (Superset dipende da healthcheck DB)</span>
+docker compose -f docker-compose-v6.yml up -d db_v6 redis_v6 otherdb_v6
+
+<span class="cm"># Aspetta che PostgreSQL sia healthy (circa 15 secondi)</span>
+docker compose -f docker-compose-v6.yml ps
+<span class="cm"># Attendi che db_v6 mostri: "healthy"</span>
+
+<span class="cm"># Oppure usa un loop di attesa</span>
+until docker exec superset-db-v6 pg_isready -U superset; do
+  echo "Waiting for DB..."; sleep 2
+done
+echo "DB is ready!"
+      </div>
+    </div>
+
+    <div class="task sys">
+      <div class="task-hdr"><span class="tbadge bs">SYS</span><div class="task-title">4.3 – Avviare Superset 6.1.0</div></div>
+      <div class="cb">
+        <span class="file-label">WSL bash</span>
+<span class="cm"># Avvia Superset (eseguirà: db upgrade → create-admin → init → gunicorn)</span>
+docker compose -f docker-compose-v6.yml up -d superset_v6
+
+<span class="cm"># Monitora i log in tempo reale (le migrazioni Alembic richiedono 1-3 minuti)</span>
+docker logs superset_v6 --follow
+      </div>
+      <div class="task-desc" style="margin-top:12px;">
+        <strong>Output atteso nei log:</strong>
+      </div>
+      <div class="cb">
+<span class="cm">## Sequenza di log che indica successo:</span>
+
+⏳ Waiting for DB...
+
+<span class="ok">INFO  [alembic.runtime.migration] Running upgrade ...</span>
+<span class="ok">INFO  [alembic.runtime.migration] Running upgrade ...</span>
+<span class="cm">## ... molte righe di migrazioni ...</span>
+<span class="ok">INFO  [alembic.runtime.migration] Running upgrade ... -> done</span>
+
+<span class="ok">Recognized superuser admin.</span>
+
+<span class="ok">Syncing role definition.</span>
+<span class="ok">Syncing permissions.</span>
+<span class="ok">Done.</span>
+
+✅ Superset 6.1.0 ready!
+
+<span class="ok">[INFO] Starting gunicorn 21.x.x</span>
+<span class="ok">[INFO] Listening at: http://0.0.0.0:8088</span>
+      </div>
+      <div class="alert a-danger">🔴 Se compare <code>ERROR</code> o <code>FAILED</code> durante <code>db upgrade</code>, fermarsi qui. Eseguire <code>docker logs superset_v6 --tail 50</code> e analizzare l'errore prima di procedere.</div>
+    </div>
+
+    <div class="task dev">
+      <div class="task-hdr"><span class="tbadge bd">DEV</span><div class="task-title">4.4 – Verifica che Superset 6.1.0 risponda</div></div>
+      <div class="cb">
+        <span class="file-label">WSL bash</span>
+<span class="cm"># Health check (dal WSL)</span>
+curl -s http://localhost:17789/health
+<span class="cm"># Atteso: "OK"</span>
+
+<span class="cm"># Test login via API</span>
+curl -s -X POST http://localhost:17789/api/v1/security/login \
+  -H "Content-Type: application/json" \
+  -d '{"username":"admin","password":"admin","provider":"db"}' \
+  | python3 -m json.tool | grep access_token
+<span class="cm"># Atteso: "access_token": "eyJ..."</span>
+
+<span class="cm"># Dal browser Windows, aprire:</span>
+<span class="cm"># http://localhost:17789</span>
+<span class="cm"># Login: admin / admin</span>
+      </div>
+      <div class="alert a-ok">✅ Se il browser mostra la UI di Superset 6.1.0 e il login funziona, le migrazioni Alembic sono andate a buon fine.</div>
+    </div>
+
+  </section>
+
+  <!-- ======================== FASE 5 ======================== -->
+  <section class="phase" id="fase5">
+    <div class="phase-hdr">
+      <div class="pnum" style="background:#e65100;">5</div>
+      <div>
+        <div class="phase-title">Ripristino DB urbreath_dev e Configurazione Database Connection</div>
+        <div class="phase-sub">Caricare i dati reali nel container PostgreSQL del WSL e collegarlo a Superset</div>
+      </div>
+    </div>
+
+    <div class="task sys">
+      <div class="task-hdr"><span class="tbadge bs">SYS</span><div class="task-title">5.1 – Caricare il dump di urbreath_dev nel container WSL</div></div>
+      <div class="cb">
+        <span class="file-label">WSL bash</span>
+<span class="cm"># Copia il dump nel container external-postgres-v6</span>
+docker cp ~/urbreath/superset/backups/pre-migration/urbreath_backup.sql \
+  external-postgres-v6:/tmp/urbreath_backup.sql
+
+<span class="cm"># Verifica che il container sia healthy</span>
+docker exec external-postgres-v6 pg_isready -U external_user
+
+<span class="cm"># Ripristina il dump (il DB urbreath_dev esiste già grazie all'env POSTGRES_DB)</span>
+docker exec external-postgres-v6 psql \
+  -U external_user \
+  -d urbreath_dev \
+  -f /tmp/urbreath_backup.sql
+
+<span class="cm"># Verifica le tabelle ripristinate</span>
+docker exec external-postgres-v6 psql \
+  -U external_user \
+  -d urbreath_dev \
+  -c "\dt"
+      </div>
+      <div class="alert a-info">ℹ️ Se il dump è di formato custom (<code>-F c</code>), usa invece: <code>pg_restore -U external_user -d urbreath_dev /tmp/urbreath_backup.dump</code></div>
+    </div>
+
+    <div class="task dev">
+      <div class="task-hdr"><span class="tbadge bd">DEV</span><div class="task-title">5.2 – Aggiungere la Database Connection in Superset 6.1.0</div></div>
+      <div class="task-desc">
+        Il nuovo Superset ha il DB metadati fresco: non conosce <code>urbreath_dev</code>. Va aggiunta manualmente prima dell'import delle dashboard.
+      </div>
+      <ol class="steps">
+        <li>Aprire <strong>http://localhost:17789</strong> nel browser Windows</li>
+        <li>Login con <strong>admin / admin</strong></li>
+        <li>Menu in alto → <strong>Settings → Database Connections</strong></li>
+        <li>Click <strong>+ Database</strong></li>
+        <li>Selezionare <strong>PostgreSQL</strong></li>
+        <li>Nel campo <strong>SQLALCHEMY URI</strong>, inserire:</li>
+      </ol>
+      <div class="cb">
+<span class="cm"># Stringa di connessione al container external-postgres-v6</span>
+<span class="cm"># (raggiungibile tramite nome container perché sono sulla stessa rete)</span>
+postgresql+psycopg2://external_user:external_pass@external-postgres-v6:5432/urbreath_dev
+      </div>
+      <ol class="steps" start="7">
+        <li>Click <strong>Test Connection</strong> → deve rispondere <strong>"Connection looks good!"</strong></li>
+        <li>Click <strong>Connect</strong></li>
+        <li>Rinominare il database come <strong>"URBreath Data"</strong> o nome riconoscibile</li>
+      </ol>
+      <div class="alert a-warn">⚠️ Se il test di connessione fallisce, verificare che <code>external-postgres-v6</code> sia nella stessa rete <code>superset_net_v6</code> di <code>superset_v6</code>. Controllare con: <code>docker network inspect superset_net_v6</code></div>
+    </div>
+
+  </section>
+
+  <!-- ======================== FASE 6 ======================== -->
+  <section class="phase" id="fase6">
+    <div class="phase-hdr">
+      <div class="pnum" style="background:#6a1b9a;">6</div>
+      <div>
+        <div class="phase-title">Import Dashboard e Recupero UUID</div>
+        <div class="phase-sub">Caricare le 4 dashboard e annotare i nuovi UUID per il frontend</div>
+      </div>
+    </div>
+
+    <div class="task dev">
+      <div class="task-hdr"><span class="tbadge bd">DEV</span><div class="task-title">6.1 – Import Dashboard via UI Superset 6.1.0</div></div>
+      <ol class="steps">
+        <li>Aprire <strong>http://localhost:17789/dashboard/list</strong></li>
+        <li>Click <strong>↑ Import</strong> (in alto a destra)</li>
+        <li>Selezionare il file ZIP della prima dashboard (es. Madrid)</li>
+        <li>Se richiesto di selezionare il database: scegliere <strong>"URBreath Data"</strong> (quella creata al punto 5.2)</li>
+        <li>Click <strong>Import</strong></li>
+        <li>Ripetere per tutte e 4 le dashboard</li>
+      </ol>
+      <div class="alert a-info">ℹ️ L'import potrebbe mostrare un avviso su tipi di chart deprecati. In tal caso procedere comunque – i chart verranno migrati automaticamente al tipo più vicino disponibile in 6.x.</div>
+    </div>
+
+    <div class="task dev">
+      <div class="task-hdr"><span class="tbadge bd">DEV</span><div class="task-title">6.2 – Abilitare Embedding su ogni Dashboard</div></div>
+      <div class="task-desc">
+        ⚠️ In Superset 6.x, ogni dashboard deve essere esplicitamente abilitata per l'embedding.
+        Senza questo step il guest token API darà errore.
+      </div>
+      <ol class="steps">
+        <li>Aprire la dashboard Madrid</li>
+        <li>Click <strong>⋮ → Embed Dashboard</strong></li>
+        <li>Nella modale: click <strong>Enable Embedding</strong></li>
+        <li><strong>Annotare l'Embedded ID (UUID)</strong> che viene mostrato</li>
+        <li>Ripetere per Cluj-Napoca, Tallinn, Leuven</li>
+      </ol>
+      <div class="alert a-warn">⚠️ L'<strong>Embedded ID</strong> mostrato in "Embed Dashboard" è quello da usare nelle env vars del React, <strong>NON</strong> l'ID numerico della URL.</div>
+    </div>
+
+    <div class="task dev">
+      <div class="task-hdr"><span class="tbadge bd">DEV</span><div class="task-title">6.3 – Recuperare UUID via API (alternativa/conferma)</div></div>
+      <div class="cb">
+        <span class="file-label">WSL bash</span>
+<span class="cm"># Ottieni access token</span>
+TOKEN=$(curl -s -X POST http://localhost:17789/api/v1/security/login \
+  -H "Content-Type: application/json" \
+  -d '{"username":"admin","password":"admin","provider":"db"}' \
+  | python3 -c "import sys,json; print(json.load(sys.stdin)['access_token'])")
+
+<span class="cm"># Lista dashboard con UUID e titolo</span>
+curl -s "http://localhost:17789/api/v1/dashboard/" \
+  -H "Authorization: Bearer $TOKEN" \
+  | python3 -c "
+import sys,json
+data = json.load(sys.stdin)
+for d in data.get('result', []):
+    print(f\"ID: {d['id']} | UUID: {d['uuid']} | Title: {d['dashboard_title']}\")
+"
+      </div>
+      <div class="alert a-info">ℹ️ Annotare i 4 UUID in un file di testo. Serviranno nel prossimo step.</div>
+    </div>
+
+    <div class="task dev">
+      <div class="task-hdr"><span class="tbadge bd">DEV</span><div class="task-title">6.4 – Aggiornare <code>.env.v6</code> con i veri UUID</div></div>
+      <div class="cb">
+        <span class="file-label">WSL bash</span>
+<span class="cm"># Modifica il file .env.v6 sostituendo i PLACEHOLDER con i veri UUID</span>
+<span class="cm"># Esempio (sostituire i valori con quelli reali annotati al punto 6.2/6.3):</span>
+
+nano ~/urbreath/superset/.env.v6
+
+<span class="cm"># Modificare le righe:</span>
+<span class="cm"># REACT_APP_DASHBOARD_MADRID=&lt;uuid-dashboard-madrid&gt;</span>
+<span class="cm"># REACT_APP_DASHBOARD_CLUJ=&lt;uuid-dashboard-cluj&gt;</span>
+<span class="cm"># REACT_APP_DASHBOARD_TALLINN=&lt;uuid-dashboard-tallinn&gt;</span>
+<span class="cm"># REACT_APP_DASHBOARD_LEUVEN=&lt;uuid-dashboard-leuven&gt;</span>
+
+<span class="cm"># Oppure con sed (sostituire UUID_MADRID_REALE con il valore vero):</span>
+sed -i 's/PLACEHOLDER_MADRID/UUID_MADRID_REALE/g' ~/urbreath/superset/.env.v6
+sed -i 's/PLACEHOLDER_CLUJ/UUID_CLUJ_REALE/g' ~/urbreath/superset/.env.v6
+sed -i 's/PLACEHOLDER_TALLINN/UUID_TALLINN_REALE/g' ~/urbreath/superset/.env.v6
+sed -i 's/PLACEHOLDER_LEUVEN/UUID_LEUVEN_REALE/g' ~/urbreath/superset/.env.v6
+
+<span class="cm"># Verifica</span>
+cat ~/urbreath/superset/.env.v6 | grep REACT_APP_DASHBOARD
+      </div>
+    </div>
+
+  </section>
+
+  <!-- ======================== FASE 7 ======================== -->
+  <section class="phase" id="fase7">
+    <div class="phase-hdr">
+      <div class="pnum" style="background:#2e7d32;">7</div>
+      <div>
+        <div class="phase-title">Build e Avvio del Frontend React Embedded</div>
+        <div class="phase-sub">Aggiornare l'SDK, rebuild e test embedding</div>
+      </div>
+    </div>
+
+    <div class="task sys">
+      <div class="task-hdr"><span class="tbadge bs">SYS</span><div class="task-title">7.1 – Build del container React con il nuovo SDK</div></div>
+      <div class="cb">
+        <span class="file-label">WSL bash</span>
+cd ~/urbreath/superset
+
+<span class="cm"># Build del container embeddedsuperset_v6 (include npm install del nuovo SDK)</span>
+docker compose -f docker-compose-v6.yml build embeddedsuperset_v6
+
+<span class="cm"># Avvio</span>
+docker compose -f docker-compose-v6.yml up -d embeddedsuperset_v6
+
+<span class="cm"># Monitora log</span>
+docker logs embeddedsuperset_v6 --follow
+<span class="cm"># Atteso: "Configuration complete; ready for start up"  (nginx)</span>
+      </div>
+    </div>
+
+    <div class="task dev">
+      <div class="task-hdr"><span class="tbadge bd">DEV</span><div class="task-title">7.2 – Test dell'embedding nel browser</div></div>
+      <div class="task-desc">Dal browser Windows:</div>
+      <table>
+        <tr><th>URL</th><th>Cosa deve apparire</th></tr>
+        <tr><td><code>http://localhost:3001/app/</code></td><td>Home page URBreath con link alle 4 città</td></tr>
+        <tr><td><code>http://localhost:3001/app/madrid</code></td><td>Dashboard Madrid embedded nell'iframe</td></tr>
+        <tr><td><code>http://localhost:3001/app/cluj-napoca</code></td><td>Dashboard Cluj-Napoca embedded</td></tr>
+        <tr><td><code>http://localhost:3001/app/tallinn</code></td><td>Dashboard Tallinn embedded</td></tr>
+        <tr><td><code>http://localhost:3001/app/leuven</code></td><td>Dashboard Leuven embedded</td></tr>
+      </table>
+      <div class="alert a-info">ℹ️ Aprire la console del browser (F12 → Console) e verificare che non ci siano errori CORS, X-Frame-Options o guest_token.</div>
+    </div>
+
+  </section>
+
+  <!-- ======================== FASE 8 ======================== -->
+  <section class="phase" id="fase8">
+    <div class="phase-hdr">
+      <div class="pnum" style="background:#006064;">8</div>
+      <div>
+        <div class="phase-title">Verifica Completa e Checklist Finale</div>
+        <div class="phase-sub">Tutti i test da eseguire per dichiarare la migrazione riuscita</div>
+      </div>
+    </div>
+
+    <div class="task both">
+      <div class="task-hdr"><span class="tbadge bb">ENTRAMBI</span><div class="task-title">8.1 – Checklist di verifica completa</div></div>
+      <div class="cb">
+        <span class="file-label">WSL bash – script di test automatico</span>
+<span class="cm">#!/bin/bash</span>
+<span class="cm"># Script di verifica rapida – eseguire da WSL</span>
+
+echo "=== TEST 1: Health check Superset 6.1.0 ==="
+HEALTH=$(curl -s http://localhost:17789/health)
+[ "$HEALTH" = "OK" ] &amp;&amp; echo "✅ PASS" || echo "❌ FAIL: $HEALTH"
+
+echo "=== TEST 2: Login API ==="
+TOKEN=$(curl -s -X POST http://localhost:17789/api/v1/security/login \
+  -H "Content-Type: application/json" \
+  -d '{"username":"admin","password":"admin","provider":"db"}' \
+  | python3 -c "import sys,json; print(json.load(sys.stdin).get('access_token','FAIL'))")
+[ "$TOKEN" != "FAIL" ] &amp;&amp; echo "✅ PASS" || echo "❌ FAIL"
+
+echo "=== TEST 3: Numero dashboard importate ==="
+COUNT=$(curl -s "http://localhost:17789/api/v1/dashboard/?q=(page_size:10)" \
+  -H "Authorization: Bearer $TOKEN" \
+  | python3 -c "import sys,json; print(json.load(sys.stdin).get('count',0))")
+echo "Dashboard trovate: $COUNT (attese: 4)"
+[ "$COUNT" -ge "4" ] &amp;&amp; echo "✅ PASS" || echo "⚠️  ATTENZIONE: count=$COUNT"
+
+echo "=== TEST 4: Connessione DB urbreath_dev ==="
+docker exec external-postgres-v6 psql \
+  -U external_user -d urbreath_dev \
+  -c "SELECT count(*) FROM information_schema.tables WHERE table_schema='public';" \
+  2>/dev/null &amp;&amp; echo "✅ PASS" || echo "❌ FAIL"
+
+echo "=== TEST 5: Frontend React raggiungibile ==="
+HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:3001/app/)
+[ "$HTTP_CODE" = "200" ] &amp;&amp; echo "✅ PASS (HTTP $HTTP_CODE)" || echo "❌ FAIL (HTTP $HTTP_CODE)"
+
+echo ""
+echo "=== RIEPILOGO CONTAINER ==="
+docker compose -f ~/urbreath/superset/docker-compose-v6.yml ps
+      </div>
+    </div>
+
+    <div class="task dev">
+      <div class="task-hdr"><span class="tbadge bd">DEV</span><div class="task-title">8.2 – Test manuale Guest Token (embedding)</div></div>
+      <div class="cb">
+        <span class="file-label">WSL bash</span>
+<span class="cm"># Sostituire UUID_DASHBOARD con un UUID reale delle dashboard importate</span>
+TOKEN=$(curl -s -X POST http://localhost:17789/api/v1/security/login \
+  -H "Content-Type: application/json" \
+  -d '{"username":"admin","password":"admin","provider":"db"}' \
+  | python3 -c "import sys,json; print(json.load(sys.stdin)['access_token'])")
+
+curl -s -X POST http://localhost:17789/api/v1/security/guest_token/ \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "user": {
+      "username": "report-viewer",
+      "first_name": "report-viewer",
+      "last_name": "report-viewer"
+    },
+    "resources": [{"type": "dashboard", "id": "UUID_DASHBOARD"}],
+    "rls": []
+  }' | python3 -m json.tool
+
+<span class="cm"># Atteso: {"token": "eyJ..."}</span>
+<span class="cm"># Se arriva {"message": "Not found"} → fare il passo 6.2 (Enable Embedding)</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3 style="margin-bottom:14px;">📋 Checklist Finale</h3>
+      <ul class="check">
+        <li>Superset 6.1.0 risponde su <code>http://localhost:17789</code></li>
+        <li>Login admin funziona</li>
+        <li>DB Connection a <code>urbreath_dev</code> testata con successo</li>
+        <li>4 dashboard importate (Madrid, Cluj, Tallinn, Leuven)</li>
+        <li>Embedding abilitato su ogni dashboard (⋮ → Embed Dashboard → Enable)</li>
+        <li>UUID annotati e aggiornati in <code>.env.v6</code></li>
+        <li>Guest Token API risponde con token JWT</li>
+        <li>Frontend React su <code>http://localhost:3001/app/</code> raggiungibile</li>
+        <li>Dashboard Madrid visibile nell'iframe senza errori CORS</li>
+        <li>Dashboard Cluj-Napoca visibile nell'iframe</li>
+        <li>Dashboard Tallinn visibile nell'iframe</li>
+        <li>Dashboard Leuven visibile nell'iframe</li>
+        <li>Console browser F12 senza errori rossi</li>
+      </ul>
+    </div>
+
+    <div class="card" style="border-color:#c8e6c9; background:#f1f8e9;">
+      <h3 style="color:#2e7d32; margin-bottom:12px;">🎉 Comandi di riepilogo – tutto lo stack in un colpo</h3>
+      <div class="cb">
+        <span class="file-label">WSL bash – startup completo</span>
+<span class="cm"># Da eseguire dopo aver completato le Fasi 1-6</span>
+cd ~/urbreath/superset
+
+<span class="cm"># Avvia tutto lo stack v6 (se non già avviato)</span>
+docker compose -f docker-compose-v6.yml up -d
+
+<span class="cm"># Controlla lo stato</span>
+docker compose -f docker-compose-v6.yml ps
+
+<span class="cm"># Log aggregati</span>
+docker compose -f docker-compose-v6.yml logs --follow
+
+<span class="cm"># Ferma tutto</span>
+docker compose -f docker-compose-v6.yml down
+
+<span class="cm"># Ferma tutto e RIMUOVI i volumi (reset completo – usare con cautela!)</span>
+docker compose -f docker-compose-v6.yml down -v
+      </div>
+    </div>
+
+  </section>
+
+</main>
+
+<footer>
+  Guida WSL – Migrazione URBreath – Apache Superset 4.1.2 → 6.1.0 · 10 Giugno 2026<br>
+  File sorgenti modificati: <code>Dockerfile</code> · <code>superset_config.py</code> · <code>docker-compose-v6.yml</code> ·
+  <code>.env.v6</code> · <code>SupersetEmbed.jsx</code> · <code>package.json</code>
+</footer>
+
+</body>
+</html>
+

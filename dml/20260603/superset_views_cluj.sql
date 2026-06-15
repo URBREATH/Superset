@@ -236,6 +236,284 @@ WHERE sr.id_survey = 1
   AND z -> 'community' IS NOT NULL;
 
 
+                                                            -- ============================================================
+-- ============================================================
+-- VIEW 9: v_survey_cluj_awareness_kpi
+-- Una riga per rispondente – 4 dimensioni di consapevolezza clima/NBS
+--   Q1: NBS familiarity        (Likert 1-4,  aware if >2, weight=2)
+--   Q2: Climate change effects (Likert 1-5,  aware if >3, weight=1)
+--   Q3: Climate adaptation     (Likert 1-5,  aware if >3, weight=2)
+--   Q4: Local NBS actions      (Yes/No,      aware if Yes, weight=1)
+--
+-- awareness_score  : punteggio pesato  0-6  (Q1×2 + Q2×1 + Q3×2 + Q4×1)
+-- awareness_pct    : normalizzato 0-100 per Superset
+-- Pesi modificabili con un semplice CREATE OR REPLACE VIEW.
+-- ============================================================
+DROP VIEW IF EXISTS public.v_survey_cluj_awareness_kpi;
+
+CREATE OR REPLACE VIEW public.v_survey_cluj_awareness_kpi AS
+SELECT
+    respondent_id,
+    gender,
+    age_group,
+    neighborhood,
+
+    ------------------------------------------------------------------
+    -- Q1: Familiarity with Nature-Based Solutions
+    ------------------------------------------------------------------
+    nbs_familiarity,
+
+    CASE nbs_familiarity
+        WHEN 'No, I have never heard of them'                    THEN 1
+        WHEN 'Yes, but I am not familiar with the concept'       THEN 2
+        WHEN 'Yes, I have a basic understanding'                 THEN 3
+        WHEN 'Yes, I am familiar with examples and applications' THEN 4
+        ELSE NULL
+        END AS q1_score,
+
+    CASE
+        WHEN nbs_familiarity IN (
+                                 'Yes, I have a basic understanding',
+                                 'Yes, I am familiar with examples and applications'
+            )
+            THEN 1 ELSE 0
+        END AS q1_binary,
+
+    ------------------------------------------------------------------
+    -- Q2: Perceived climate change impact
+    ------------------------------------------------------------------
+    climate_impact_perception,
+
+    climate_impact_perception AS q2_score,
+
+    CASE
+        WHEN climate_impact_perception > 3
+            THEN 1 ELSE 0
+        END AS q2_binary,
+
+    ------------------------------------------------------------------
+    -- Q3: Familiarity with climate adaptation
+    ------------------------------------------------------------------
+    climate_adaptation_familiarity,
+
+    climate_adaptation_familiarity AS q3_score,
+
+    CASE
+        WHEN climate_adaptation_familiarity > 3
+            THEN 1 ELSE 0
+        END AS q3_binary,
+
+    ------------------------------------------------------------------
+    -- Q4: Awareness of local NBS projects
+    ------------------------------------------------------------------
+    aware_of_nbs_projects,
+
+    CASE
+        WHEN aware_of_nbs_projects = 'Yes' THEN 1
+        ELSE 0
+        END AS q4_score,
+
+    CASE
+        WHEN aware_of_nbs_projects = 'Yes' THEN 1
+        ELSE 0
+        END AS q4_binary,
+
+    ------------------------------------------------------------------
+    -- Legacy boolean fields
+    ------------------------------------------------------------------
+    (
+        nbs_familiarity IN (
+                            'Yes, I have a basic understanding',
+                            'Yes, I am familiar with examples and applications'
+            )
+        ) AS nbs_familiarity_aware,
+
+    (climate_impact_perception > 3)
+        AS climate_impact_aware,
+
+    (climate_adaptation_familiarity > 3)
+        AS climate_adaptation_aware,
+
+    (aware_of_nbs_projects = 'Yes')
+        AS nbs_projects_aware,
+
+    ------------------------------------------------------------------
+    -- Awareness score (0-6)
+    -- Q1 weight=2
+    -- Q2 weight=1
+    -- Q3 weight=2
+    -- Q4 weight=1
+    ------------------------------------------------------------------
+    (
+        q1_binary * 2 +
+        q2_binary * 1 +
+        q3_binary * 2 +
+        q4_binary * 1
+        ) AS awareness_score,
+
+    ------------------------------------------------------------------
+    -- Awareness score normalized 0-100
+    ------------------------------------------------------------------
+    ROUND(
+            100.0 *
+            (
+                q1_binary * 2 +
+                q2_binary +
+                q3_binary * 2 +
+                q4_binary
+                ) / 6.0,
+            1
+    ) AS awareness_pct
+
+FROM (
+         SELECT
+             respondent_id,
+             gender,
+             age_group,
+             neighborhood,
+             nbs_familiarity,
+             climate_impact_perception,
+             climate_adaptation_familiarity,
+             aware_of_nbs_projects,
+
+             CASE
+                 WHEN nbs_familiarity IN (
+                                          'Yes, I have a basic understanding',
+                                          'Yes, I am familiar with examples and applications'
+                     )
+                     THEN 1 ELSE 0
+                 END AS q1_binary,
+
+             CASE
+                 WHEN climate_impact_perception > 3
+                     THEN 1 ELSE 0
+                 END AS q2_binary,
+
+             CASE
+                 WHEN climate_adaptation_familiarity > 3
+                     THEN 1 ELSE 0
+                 END AS q3_binary,
+
+             CASE
+                 WHEN aware_of_nbs_projects = 'Yes'
+                     THEN 1 ELSE 0
+                 END AS q4_binary
+
+         FROM public.v_survey_cluj_respondent
+     ) s;
+
+
+-- ============================================================
+-- VIEW 10: v_survey_cluj_satisfaction_kpi
+-- Una riga per rispondente × zona – Satisfaction Index NBS surroundings
+--
+-- 8 domande Likert 1-5 raggruppate in 3 categorie:
+--   Safety & Comfort       : Q1 neighborhood, Q2 safety
+--   Public & Green Spaces  : Q3 green_spaces_amount, Q4 public_spaces_quality, Q7 aesthetics
+--   Pollution & Waste      : Q5 noise, Q6 air_quality, Q8 waste_collection
+--
+-- category_avg       = media delle domande della categoria (ignora NULL)
+-- satisfaction_index = media delle 3 category_avg  (range 1.0–5.0)
+-- satisfaction_index_pct = normalizzato 0–100  formula: (index-1)/4 * 100
+-- ============================================================
+
+DROP VIEW IF EXISTS public.v_survey_cluj_satisfaction_kpi;
+CREATE OR REPLACE VIEW public.v_survey_cluj_satisfaction_kpi AS
+WITH base AS (
+    SELECT
+        respondent_id,
+        zone_id,
+        CASE zone_id
+            WHEN '1' THEN 'Alexandru Sahia'
+            WHEN '2' THEN 'N?d??el'
+            WHEN '3' THEN 'Timi?ului'
+            WHEN '4' THEN 'Barc III'
+            ELSE zone_name
+        END                    AS zone_label,
+        neighborhood           AS q1,
+        safety                 AS q2,
+        green_spaces_amount    AS q3,
+        public_spaces_quality  AS q4,
+        noise                  AS q5,
+        air_quality            AS q6,
+        aesthetics             AS q7,
+        waste_collection       AS q8
+    FROM public.v_survey_cluj_satisfaction
+),
+scored AS (
+    SELECT
+        respondent_id,
+        zone_id,
+        zone_label,
+        q1, q2, q3, q4, q5, q6, q7, q8,
+
+        -- Safety & Comfort: Q1, Q2
+        ROUND(
+            (COALESCE(q1,0) + COALESCE(q2,0))::numeric /
+            NULLIF(CASE WHEN q1 IS NOT NULL THEN 1 ELSE 0 END
+                 + CASE WHEN q2 IS NOT NULL THEN 1 ELSE 0 END, 0)
+        , 2)                   AS cat_safety_comfort,
+
+        -- Public & Green Spaces: Q3, Q4, Q7
+        ROUND(
+            (COALESCE(q3,0) + COALESCE(q4,0) + COALESCE(q7,0))::numeric /
+            NULLIF(CASE WHEN q3 IS NOT NULL THEN 1 ELSE 0 END
+                 + CASE WHEN q4 IS NOT NULL THEN 1 ELSE 0 END
+                 + CASE WHEN q7 IS NOT NULL THEN 1 ELSE 0 END, 0)
+        , 2)                   AS cat_public_green_spaces,
+
+        -- Pollution & Waste: Q5, Q6, Q8
+        ROUND(
+            (COALESCE(q5,0) + COALESCE(q6,0) + COALESCE(q8,0))::numeric /
+            NULLIF(CASE WHEN q5 IS NOT NULL THEN 1 ELSE 0 END
+                 + CASE WHEN q6 IS NOT NULL THEN 1 ELSE 0 END
+                 + CASE WHEN q8 IS NOT NULL THEN 1 ELSE 0 END, 0)
+        , 2)                   AS cat_pollution_waste
+
+    FROM base
+)
+SELECT
+    respondent_id,
+    zone_id,
+    zone_label,
+    q1 AS q1_neighborhood,
+    q2 AS q2_safety,
+    q3 AS q3_green_spaces,
+    q4 AS q4_public_spaces,
+    q5 AS q5_noise,
+    q6 AS q6_air_quality,
+    q7 AS q7_aesthetics,
+    q8 AS q8_waste_collection,
+    cat_safety_comfort,
+    cat_public_green_spaces,
+    cat_pollution_waste,
+
+    -- Overall Satisfaction Index (mean of 3 category averages, range 1–5)
+    ROUND(
+            (COALESCE(cat_safety_comfort,0)
+                + COALESCE(cat_public_green_spaces,0)
+                + COALESCE(cat_pollution_waste,0))::numeric /
+                NULLIF(
+                CASE WHEN cat_safety_comfort      IS NOT NULL THEN 1 ELSE 0 END
+                + CASE WHEN cat_public_green_spaces IS NOT NULL THEN 1 ELSE 0 END
+                + CASE WHEN cat_pollution_waste     IS NOT NULL THEN 1 ELSE 0 END, 0)
+        , 2)                           AS satisfaction_index,
+
+    -- Normalised 0–100: (index - 1) / 4 * 100
+    ROUND(((
+        (COALESCE(cat_safety_comfort,0)
+            + COALESCE(cat_public_green_spaces,0)
+            + COALESCE(cat_pollution_waste,0))::numeric /
+        NULLIF(
+        CASE WHEN cat_safety_comfort      IS NOT NULL THEN 1 ELSE 0 END
+        + CASE WHEN cat_public_green_spaces IS NOT NULL THEN 1 ELSE 0 END
+        + CASE WHEN cat_pollution_waste     IS NOT NULL THEN 1 ELSE 0 END, 0)
+        ) - 1.0) * 25.0, 1)            AS satisfaction_index_pct
+
+FROM scored;
+
+
+
 -- ============================================================
 -- ============================================================
 -- QUERY DI RIFERIMENTO PER OGNI GRAFICO
