@@ -1,0 +1,60 @@
+# docker-compose-jobs.yml – Deployment urbreath-ds-jobs (Spring Boot Batch)
+# Tutti i job sono disabilitati di default. Abilitarli tramite variabili d'ambiente nel file .env
+
+services:
+  urbreath-ds-jobs:
+    build: .
+    # Se si usa un'immagine pre-buildata:
+    # image: urbreath-ds-jobs:1.0.0
+    container_name: urbreath-ds-jobs
+    restart: unless-stopped
+
+    environment:
+      # ?? Jasypt: OBBLIGATORIA per decriptare le credenziali ENC(...) ???????
+      - JASYPT_PASSWORD=${JASYPT_PASSWORD}
+
+      # ?? Abilitazione job schedulati (default: false per tutti) ???????????
+      - APP_SCHEDULER_IMPORT_TRAFFIC_ENABLED=${TRAFFIC_ENABLED:-false}
+      - APP_SCHEDULER_IMPORT_TRAFFIC_CRON=${TRAFFIC_CRON:-0/30 * * * * *}
+
+      - APP_SCHEDULER_IMPORT_TEMPERATURE_ENABLED=${TEMPERATURE_ENABLED:-false}
+      - APP_SCHEDULER_IMPORT_TEMPERATURE_CRON=${TEMPERATURE_CRON:-0/30 * * * * *}
+
+      - APP_SCHEDULER_IMPORT_PRECIPITATION_ENABLED=${PRECIPITATION_ENABLED:-false}
+      - APP_SCHEDULER_IMPORT_PRECIPITATION_CRON=${PRECIPITATION_CRON:-0/30 * * * * *}
+
+      - APP_SCHEDULER_WMS_ENABLED=${WMS_ENABLED:-false}
+      - APP_SCHEDULER_WMS_CRON=${WMS_CRON:-0 0/5 * * * *}
+
+      - APP_SCHEDULER_FROST_CONFIG_ENABLED=${FROST_CONFIG_ENABLED:-false}
+      - APP_SCHEDULER_FROST_CONFIG_CRON=${FROST_CONFIG_CRON:-0 0/20 * * * *}
+
+      - APP_SCHEDULER_FROST_IMPORT_ENABLED=${FROST_IMPORT_ENABLED:-false}
+      - APP_SCHEDULER_FROST_IMPORT_CRON=${FROST_IMPORT_CRON:-0 0/20 * * * *}
+
+      # ?? Override endpoint servizi esterni (opzionale) ?????????????????????
+      # - FROST_BASE_URL=https://frost.urbreath.tech/FROST-Server/v1.1
+      # - MINIO_ENDPOINT=https://minio-api.urbreath.tech/
+
+    volumes:
+      # Override configurazione per produzione (opzionale ma raccomandato):
+      # - ./config/application-prod.yaml:/app/config/application.yaml:ro
+      - jobs_logs:/app/logs
+
+    # Nessun port mapping necessario (nessun endpoint HTTP esposto)
+    # Decommentare solo per debug remoto JDWP:
+    # ports:
+    #   - "5005:5005"
+
+    # Collegare alla rete Docker dell'infrastruttura se necessario:
+    # networks:
+    #   - urbreath_net
+
+volumes:
+  jobs_logs:
+
+# Rete esterna (decommentare se l'app deve comunicare con altri container)
+# networks:
+#   urbreath_net:
+#     external: true
+
