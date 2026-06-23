@@ -1,5 +1,5 @@
-# docker-compose-jobs.yml – Deployment urbreath-ds-jobs (Spring Boot Batch)
-# Tutti i job sono disabilitati di default. Abilitarli tramite variabili d'ambiente nel file .env
+# docker-compose-jobs.yml ? Deployment urbreath-ds-jobs (Spring Boot Batch)
+# Configurazione scheduler in application.yaml; gestione runtime da backoffice.
 
 services:
   urbreath-ds-jobs:
@@ -12,25 +12,10 @@ services:
     environment:
       # ?? Jasypt: OBBLIGATORIA per decriptare le credenziali ENC(...) ???????
       - JASYPT_PASSWORD=${JASYPT_PASSWORD}
+      - BACKOFFICE_TOKEN=${BACKOFFICE_TOKEN}
 
-      # ?? Abilitazione job schedulati (default: false per tutti) ???????????
-      - APP_SCHEDULER_IMPORT_TRAFFIC_ENABLED=${TRAFFIC_ENABLED:-false}
-      - APP_SCHEDULER_IMPORT_TRAFFIC_CRON=${TRAFFIC_CRON:-0/30 * * * * *}
-
-      - APP_SCHEDULER_IMPORT_TEMPERATURE_ENABLED=${TEMPERATURE_ENABLED:-false}
-      - APP_SCHEDULER_IMPORT_TEMPERATURE_CRON=${TEMPERATURE_CRON:-0/30 * * * * *}
-
-      - APP_SCHEDULER_IMPORT_PRECIPITATION_ENABLED=${PRECIPITATION_ENABLED:-false}
-      - APP_SCHEDULER_IMPORT_PRECIPITATION_CRON=${PRECIPITATION_CRON:-0/30 * * * * *}
-
-      - APP_SCHEDULER_WMS_ENABLED=${WMS_ENABLED:-false}
-      - APP_SCHEDULER_WMS_CRON=${WMS_CRON:-0 0/5 * * * *}
-
-      - APP_SCHEDULER_FROST_CONFIG_ENABLED=${FROST_CONFIG_ENABLED:-false}
-      - APP_SCHEDULER_FROST_CONFIG_CRON=${FROST_CONFIG_CRON:-0 0/20 * * * *}
-
-      - APP_SCHEDULER_FROST_IMPORT_ENABLED=${FROST_IMPORT_ENABLED:-false}
-      - APP_SCHEDULER_FROST_IMPORT_CRON=${FROST_IMPORT_CRON:-0 0/20 * * * *}
+      # Schedulazioni gestite da application.yaml + backoffice runtime.
+      # Nessun override cron/enabled da env per evitare configurazioni duplicate.
 
       # ?? Override endpoint servizi esterni (opzionale) ?????????????????????
       # - FROST_BASE_URL=https://frost.urbreath.tech/FROST-Server/v1.1
@@ -41,10 +26,10 @@ services:
       # - ./config/application-prod.yaml:/app/config/application.yaml:ro
       - jobs_logs:/app/logs
 
-    # Nessun port mapping necessario (nessun endpoint HTTP esposto)
-    # Decommentare solo per debug remoto JDWP:
-    # ports:
-    #   - "5005:5005"
+    ports:
+      - "${BACKOFFICE_PORT:-18080}:8080"
+    # Per debug remoto JDWP aggiungere anche:
+    # - "5005:5005"
 
     # Collegare alla rete Docker dell'infrastruttura se necessario:
     # networks:

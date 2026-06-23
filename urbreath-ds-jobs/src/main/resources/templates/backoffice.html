@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>URBreath Jobs Backoffice</title>
+  <style>
+    :root {
+      --bg: #f3f6fb;
+      --panel: #ffffff;
+      --panel-soft: #f8fafc;
+      --line: #dbe4f0;
+      --text: #1f2937;
+      --muted: #64748b;
+      --primary: #2563eb;
+      --primary-dark: #1d4ed8;
+      --success: #15803d;
+      --success-bg: #dcfce7;
+      --danger: #b91c1c;
+      --danger-bg: #fee2e2;
+      --warning: #b45309;
+      --warning-bg: #fef3c7;
+      --info-bg: #dbeafe;
+      --shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+      --radius: 14px;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      font-family: Inter, Segoe UI, Arial, sans-serif;
+      margin: 0;
+      background: linear-gradient(180deg, #eef4ff 0%, var(--bg) 180px);
+      color: var(--text);
+    }
+    .page { padding: 24px; }
+    h1 { margin: 0 0 8px 0; font-size: 2.2rem; }
+    .muted { color: var(--muted); margin: 0; }
+    .hero, .panel {
+      background: var(--panel);
+      border: 1px solid rgba(219, 228, 240, 0.9);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+    .hero { padding: 24px; margin-bottom: 18px; }
+    .panel { padding: 18px; margin-top: 18px; overflow: hidden; }
+    .toolbar {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+      margin-top: 18px;
+    }
+    .toolbar label { font-weight: 700; }
+    input {
+      padding: 10px 12px;
+      font-size: 14px;
+      border: 1px solid #cbd5e1;
+      border-radius: 10px;
+      background: #fff;
+      color: var(--text);
+    }
+    .token-input { min-width: 360px; flex: 1 1 420px; }
+    .token-wrap {
+      min-width: 360px;
+      flex: 1 1 420px;
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+    .token-wrap .token-input { min-width: 0; flex: 1 1 auto; }
+    .cron-input {
+      width: 100%;
+      min-width: 170px;
+      font-family: Consolas, monospace;
+      background: #fbfdff;
+    }
+    button {
+      cursor: pointer;
+      border: 0;
+      border-radius: 10px;
+      padding: 10px 14px;
+      font-size: 14px;
+      font-weight: 600;
+      transition: transform .08s ease, background-color .15s ease, opacity .15s ease;
+      background: #e5e7eb;
+      color: #111827;
+    }
+    button:hover { transform: translateY(-1px); }
+    .btn-primary { background: var(--primary); color: #fff; }
+    .btn-primary:hover { background: var(--primary-dark); }
+    .btn-success { background: #dcfce7; color: #166534; }
+    .btn-danger { background: #fee2e2; color: #991b1b; }
+    .btn-warning { background: #fef3c7; color: #92400e; }
+    .btn-neutral { background: #e2e8f0; color: #334155; }
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 14px;
+      margin-top: 18px;
+    }
+    .card {
+      background: var(--panel-soft);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 14px 16px;
+    }
+    .card .label { color: var(--muted); font-size: 13px; }
+    .card .value { font-size: 28px; font-weight: 800; margin-top: 6px; }
+    .note {
+      margin-top: 16px;
+      background: var(--info-bg);
+      border: 1px solid #bfdbfe;
+      color: #1e3a8a;
+      border-radius: 12px;
+      padding: 12px 14px;
+      font-size: 13px;
+      line-height: 1.45;
+    }
+    .status-banner {
+      margin-top: 12px;
+      border-radius: 10px;
+      padding: 10px 12px;
+      font-size: 13px;
+      display: none;
+    }
+    .status-banner.error { background: #fee2e2; border: 1px solid #fecaca; color: #991b1b; display: block; }
+    .status-banner.ok { background: #dcfce7; border: 1px solid #bbf7d0; color: #166534; display: block; }
+    .table-wrap { overflow: auto; }
+    table { width: 100%; border-collapse: separate; border-spacing: 0; background: #fff; margin-top: 8px; }
+    th, td {
+      border-bottom: 1px solid #edf2f7;
+      padding: 12px;
+      font-size: 14px;
+      vertical-align: top;
+      text-align: left;
+    }
+    th {
+      background: #eef4ff;
+      color: #334155;
+      position: sticky;
+      top: 0;
+      z-index: 1;
+    }
+    tbody tr:hover { background: #fafcff; }
+    .job-name { font-weight: 800; font-size: 16px; }
+    .job-id { color: var(--muted); font-size: 13px; margin-top: 2px; }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-weight: 800;
+      font-size: 12px;
+      letter-spacing: .02em;
+    }
+    .badge-ok { color: var(--success); background: var(--success-bg); }
+    .badge-ko { color: var(--danger); background: var(--danger-bg); }
+    .badge-warn { color: var(--warning); background: var(--warning-bg); }
+    .subtle { color: var(--muted); font-size: 12px; margin-top: 4px; }
+    .mono { font-family: Consolas, monospace; word-break: break-word; }
+    .row-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+    .stack { display: grid; gap: 8px; }
+    .log {
+      background: #0f172a;
+      color: #e2e8f0;
+      border-radius: 12px;
+      padding: 14px;
+      white-space: pre-wrap;
+      min-height: 72px;
+      font-family: Consolas, monospace;
+      font-size: 13px;
+    }
+    .danger-text { color: var(--danger); font-weight: 700; }
+    .success-text { color: var(--success); font-weight: 700; }
+    @media (max-width: 1200px) {
+      th, td { font-size: 13px; padding: 10px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+  <div class="hero">
+    <h1>URBreath Jobs Backoffice</h1>
+    <p class="muted">Monitoraggio e controllo runtime schedulazioni job.</p>
+
+    <div class="toolbar">
+      <label for="token">Token</label>
+      <div class="token-wrap">
+        <input id="token" class="token-input" type="password" placeholder="Inserisci token backoffice" />
+        <button id="toggleTokenBtn" class="btn-neutral" onclick="toggleTokenVisibility()" type="button">Mostra</button>
+      </div>
+      <button class="btn-primary" onclick="refreshAll()">Aggiorna</button>
+    </div>
+    <div id="statusBanner" class="status-banner"></div>
+
+    <div class="cards" id="summaryCards">
+      <div class="card"><div class="label">Job configurati</div><div class="value" id="sumTotal">-</div></div>
+      <div class="card"><div class="label">Enabled</div><div class="value" id="sumEnabled">-</div></div>
+      <div class="card"><div class="label">Running</div><div class="value" id="sumRunning">-</div></div>
+      <div class="card"><div class="label">Ultimo refresh</div><div class="value" id="sumRefresh" style="font-size:18px">-</div></div>
+    </div>
+
+    <div class="note">
+      <strong>Nota:</strong> il flag <strong>Enabled</strong> controlla solo le <strong>future partenze automatiche</strong>.
+      Se vedi un job in <strong>RUNNING</strong> anche con Enabled = NO, significa in genere che esiste una execution già partita in precedenza,
+      avviata manualmente, oppure rimasta marcata come attiva nelle tabelle Spring Batch.
+    </div>
+  </div>
+
+  <div class="panel table-wrap">
+  <table id="jobsTable">
+    <thead>
+      <tr>
+        <th>Job</th>
+        <th>Enabled</th>
+        <th>Cron</th>
+        <th>Running</th>
+        <th>Next run</th>
+        <th>Ultimo stato</th>
+        <th>Ultimo errore</th>
+        <th>Azioni</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+  </div>
+
+  <div class="panel">
+  <h3 style="margin-top:0">Variabili scheduler runtime</h3>
+  <div class="table-wrap">
+  <table id="varsTable">
+    <thead><tr><th>Chiave</th><th>Valore</th></tr></thead>
+    <tbody></tbody>
+  </table>
+  </div>
+  </div>
+
+  <div class="panel">
+  <h3 style="margin-top:0">Output</h3>
+  <div class="log" id="log"></div>
+  </div>
+  </div>
+
+  <script>
+    let refreshInProgress = false;
+
+    function token() {
+      return document.getElementById('token').value.trim();
+    }
+
+    function toggleTokenVisibility() {
+      const tokenInput = document.getElementById('token');
+      const toggleBtn = document.getElementById('toggleTokenBtn');
+      const show = tokenInput.type === 'password';
+
+      tokenInput.type = show ? 'text' : 'password';
+      toggleBtn.textContent = show ? 'Nascondi' : 'Mostra';
+    }
+
+    function setBanner(message, isError) {
+      const el = document.getElementById('statusBanner');
+      if (!message) {
+        el.textContent = '';
+        el.className = 'status-banner';
+        return;
+      }
+      el.textContent = message;
+      el.className = 'status-banner ' + (isError ? 'error' : 'ok');
+    }
+
+    function headers() {
+      return {
+        'Content-Type': 'application/json',
+        'X-Backoffice-Token': token()
+      };
+    }
+
+    function toLocal(dateValue) {
+      if (!dateValue) return '-';
+      if (typeof dateValue === 'number') {
+        const millis = dateValue < 1000000000000 ? dateValue * 1000 : dateValue;
+        return new Date(millis).toLocaleString();
+      }
+      const parsed = new Date(dateValue);
+      if (!isNaN(parsed.getTime())) {
+        return parsed.toLocaleString();
+      }
+      return String(dateValue);
+    }
+
+    function log(msg) {
+      const el = document.getElementById('log');
+      el.textContent = '[' + new Date().toLocaleTimeString() + '] ' + msg + '\n' + el.textContent;
+    }
+
+    async function api(path, options) {
+      const separator = path.includes('?') ? '&' : '?';
+      const uncachedPath = path + separator + '_ts=' + Date.now();
+      const response = await fetch(uncachedPath, {
+        ...(options || {}),
+        cache: 'no-store',
+        headers: {
+          ...headers(),
+          ...((options && options.headers) || {})
+        }
+      });
+
+      if (!response.ok) {
+        const errBody = await response.text();
+        throw new Error('HTTP ' + response.status + ': ' + errBody);
+      }
+
+        return response.json();
+    }
+
+    function badge(enabled, yesLabel, noLabel) {
+      return enabled
+        ? `<span class="badge badge-ok">${yesLabel}</span>`
+        : `<span class="badge badge-ko">${noLabel}</span>`;
+    }
+
+    function runningBadge(running) {
+      return running
+        ? '<span class="badge badge-ko">RUNNING</span>'
+        : '<span class="badge badge-ok">IDLE</span>';
+    }
+
+    function statusBadge(status) {
+      if (!status) return '<span class="badge badge-warn">UNKNOWN</span>';
+      if (status === 'COMPLETED') return '<span class="badge badge-ok">COMPLETED</span>';
+      if (status === 'FAILED' || status === 'STOPPED') return `<span class="badge badge-ko">${status}</span>`;
+      if (status === 'STARTING' || status === 'STARTED' || status === 'STOPPING') return `<span class="badge badge-warn">${status}</span>`;
+      return `<span class="badge badge-warn">${status}</span>`;
+    }
+
+    function updateSummary(jobs) {
+      document.getElementById('sumTotal').textContent = jobs.length;
+      document.getElementById('sumEnabled').textContent = jobs.filter(j => j.enabled).length;
+      document.getElementById('sumRunning').textContent = jobs.filter(j => j.running).length;
+      document.getElementById('sumRefresh').textContent = new Date().toLocaleTimeString();
+    }
+
+    async function refreshJobs() {
+      const jobs = await api('/backoffice/api/jobs');
+      const tbody = document.querySelector('#jobsTable tbody');
+      tbody.innerHTML = '';
+      updateSummary(jobs);
+
+      jobs.forEach(job => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>
+            <div class="job-name">${job.displayName}</div>
+            <div class="job-id">${job.id}</div>
+          </td>
+          <td>
+              ${badge(job.enabled, 'ENABLED', 'DISABLED')}
+              <div class="subtle">Blocca/consente solo i trigger futuri</div>
+              <div style="margin-top:8px">
+                <button class="${job.enabled ? 'btn-warning' : 'btn-success'}" onclick="toggleEnabled('${job.id}', ${!job.enabled})">${job.enabled ? 'Disabilita' : 'Abilita'}</button>
+              </div>
+          </td>
+          <td>
+            <div class="stack">
+              <input class="cron-input" id="cron-${job.id}" value="${job.cron}" />
+              <div><button class="btn-primary" onclick="updateCron('${job.id}')">Salva cron</button></div>
+            </div>
+          </td>
+          <td>
+            ${runningBadge(job.running)}
+            <div class="subtle mono">${(job.runningExecutionIds || []).join(', ') || '-'}</div>
+          </td>
+          <td>
+            ${toLocal(job.nextRunAt)}
+            <div class="subtle">${job.secondsToNextRun >= 0 ? 'tra ' + job.secondsToNextRun + ' s' : 'job disabilitato o non schedulato'}</div>
+          </td>
+          <td>${statusBadge(job.lastStatus)}</td>
+          <td><div class="mono">${job.lastError || '-'}</div></td>
+          <td>
+            <div class="row-actions">
+              <button class="btn-primary" onclick="runNow('${job.id}')">Run now</button>
+              <button class="btn-danger" onclick="stopNow('${job.id}')">Stop</button>
+              <button class="btn-warning" onclick="restartNow('${job.id}')">Restart last failed</button>
+              <button class="btn-neutral" onclick="resetStuck('${job.id}')">Reset stuck queue</button>
+            </div>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    async function refreshVars() {
+      const vars = await api('/backoffice/api/variables');
+      const tbody = document.querySelector('#varsTable tbody');
+      tbody.innerHTML = '';
+
+      vars.forEach(v => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td>${v.key}</td><td>${v.value}</td>`;
+        tbody.appendChild(tr);
+      });
+    }
+
+    async function refreshAll() {
+      if (refreshInProgress) {
+        return;
+      }
+      refreshInProgress = true;
+      try {
+        await Promise.all([refreshJobs(), refreshVars()]);
+        setBanner('Token valido. Dati aggiornati.', false);
+        log('Aggiornamento completato');
+      } catch (e) {
+        if ((e.message || '').includes('HTTP 401')) {
+          setBanner('Token non valido (401). Verifica il valore nel campo Token.', true);
+        } else if ((e.message || '').includes('HTTP 503')) {
+          setBanner('Token backoffice non configurato sul server (503).', true);
+        } else {
+          setBanner('Errore durante il refresh: ' + e.message, true);
+        }
+        log('Errore refresh: ' + e.message);
+      } finally {
+        refreshInProgress = false;
+      }
+    }
+
+    async function runNow(jobId) {
+      try {
+        const res = await api('/backoffice/api/jobs/' + jobId + '/run', { method: 'POST' });
+        log(jobId + ' run: ' + res.message);
+        await refreshAll();
+      } catch (e) {
+        log('Errore run ' + jobId + ': ' + e.message);
+      }
+    }
+
+    async function stopNow(jobId) {
+      try {
+        const res = await api('/backoffice/api/jobs/' + jobId + '/stop', { method: 'POST' });
+        log(jobId + ' stop: ' + res.message);
+        await refreshAll();
+      } catch (e) {
+        log('Errore stop ' + jobId + ': ' + e.message);
+      }
+    }
+
+    async function restartNow(jobId) {
+      try {
+        const res = await api('/backoffice/api/jobs/' + jobId + '/restart', { method: 'POST' });
+        log(jobId + ' restart: ' + res.message);
+        await refreshAll();
+      } catch (e) {
+        log('Errore restart ' + jobId + ': ' + e.message);
+      }
+    }
+
+    async function resetStuck(jobId) {
+      try {
+        const minutes = prompt('Reset task in-progress piu vecchie di quanti minuti?', '60');
+        if (!minutes) return;
+        const res = await api('/backoffice/api/jobs/' + jobId + '/queue/reset-stuck?minutes=' + encodeURIComponent(minutes), { method: 'POST' });
+        log(jobId + ' reset queue: ' + res.resetRows + ' task reset');
+        await refreshAll();
+      } catch (e) {
+        log('Errore reset queue ' + jobId + ': ' + e.message);
+      }
+    }
+
+    async function toggleEnabled(jobId, enabled) {
+      try {
+        const res = await api('/backoffice/api/jobs/' + jobId + '/schedule', {
+          method: 'POST',
+          body: JSON.stringify({ enabled: enabled })
+        });
+        log(jobId + ' schedule: ' + res.message);
+        await refreshAll();
+      } catch (e) {
+        log('Errore enabled ' + jobId + ': ' + e.message);
+      }
+    }
+
+    async function updateCron(jobId) {
+      try {
+        const cron = document.getElementById('cron-' + jobId).value.trim();
+        const res = await api('/backoffice/api/jobs/' + jobId + '/schedule', {
+          method: 'POST',
+          body: JSON.stringify({ cron: cron })
+        });
+        log(jobId + ' cron: ' + res.message);
+        await refreshAll();
+      } catch (e) {
+        log('Errore cron ' + jobId + ': ' + e.message);
+      }
+    }
+
+    refreshAll();
+    setInterval(refreshAll, 8000);
+  </script>
+</body>
+</html>
+
+

@@ -1,12 +1,14 @@
 package eu.urbreathdsjobs.job;
 
+import eu.urbreathdsjobs.backoffice.DynamicCronGateService;
+import eu.urbreathdsjobs.backoffice.JobKey;
+import eu.urbreathdsjobs.backoffice.SchedulerControlService;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.JobParameters;
 import org.springframework.batch.core.JobParametersBuilder;
 import org.springframework.batch.core.explore.JobExplorer;
 import org.springframework.batch.core.launch.JobLauncher;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -24,53 +26,59 @@ public class JobImportScheduler {
     private final Job temperatureImportJob;
     private final JobExplorer jobExplorer;
     private final Job precipitationImportJob;
+    private final SchedulerControlService schedulerControlService;
+    private final DynamicCronGateService dynamicCronGateService;
 
     // Un lock per job
     private final Lock trafficLock = new ReentrantLock();
     private final Lock temperatureLock = new ReentrantLock();
     private final Lock precipitationLock = new ReentrantLock();
 
-    @Value("${app.scheduler.import.traffic.enabled:true}")
-    private boolean trafficEnabled;
-
-    @Value("${app.scheduler.import.temperature.enabled:true}")
-    private boolean temperatureEnabled;
-
-    @Value("${app.scheduler.import.precipitation.enabled:true}")
-    private boolean precipitationEnabled;
-    
     public JobImportScheduler(
             JobLauncher jobLauncher,
             @Qualifier("trafficJob") Job trafficJob,
             @Qualifier("temperatureImportJob") Job temperatureImportJob,
             @Qualifier("precipitationImportJob") Job precipitationImportJob,
-            JobExplorer jobExplorer) {
+            JobExplorer jobExplorer,
+            SchedulerControlService schedulerControlService,
+            DynamicCronGateService dynamicCronGateService) {
         this.jobLauncher = jobLauncher;
         this.trafficJob = trafficJob;
         this.temperatureImportJob = temperatureImportJob;
         this.precipitationImportJob = precipitationImportJob;
         this.jobExplorer = jobExplorer;
+        this.schedulerControlService = schedulerControlService;
+        this.dynamicCronGateService = dynamicCronGateService;
     }
 
-    @Scheduled(cron = "${app.scheduler.import.traffic.cron:0/30 * * * * *}")
+    @Scheduled(fixedDelayString = "${backoffice.scheduler.tick-ms:1000}")
     public void runTrafficJob() throws Exception {
-        if (!trafficEnabled) {
+        if (!schedulerControlService.isEnabled(JobKey.TRAFFIC_IMPORT)) {
+            return;
+        }
+        if (!dynamicCronGateService.shouldTrigger(JobKey.TRAFFIC_IMPORT)) {
             return;
         }
         runJob(trafficJob, trafficLock, 1L);
     }
 
-    @Scheduled(cron = "${app.scheduler.import.temperature.cron:0/30 * * * * *}")
+    @Scheduled(fixedDelayString = "${backoffice.scheduler.tick-ms:1000}")
     public void runTemperatureImportJob() throws Exception {
-        if (!temperatureEnabled) {
+        if (!schedulerControlService.isEnabled(JobKey.TEMPERATURE_IMPORT)) {
+            return;
+        }
+        if (!dynamicCronGateService.shouldTrigger(JobKey.TEMPERATURE_IMPORT)) {
             return;
         }
         runJob(temperatureImportJob, temperatureLock, 2L);
     }
 
-    @Scheduled(cron = "${app.scheduler.import.precipitation.cron:0/30 * * * * *}")
+    @Scheduled(fixedDelayString = "${backoffice.scheduler.tick-ms:1000}")
     public void runPrecipitationImportJob() throws Exception {
-        if (!precipitationEnabled) {
+        if (!schedulerControlService.isEnabled(JobKey.PRECIPITATION_IMPORT)) {
+            return;
+        }
+        if (!dynamicCronGateService.shouldTrigger(JobKey.PRECIPITATION_IMPORT)) {
             return;
         }
         runJob(precipitationImportJob, precipitationLock, 3L);

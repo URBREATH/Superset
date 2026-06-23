@@ -1,12 +1,14 @@
 package eu.urbreathdsjobs.job;
 
+import eu.urbreathdsjobs.backoffice.DynamicCronGateService;
+import eu.urbreathdsjobs.backoffice.JobKey;
+import eu.urbreathdsjobs.backoffice.SchedulerControlService;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.JobParameters;
 import org.springframework.batch.core.JobParametersBuilder;
 import org.springframework.batch.core.explore.JobExplorer;
 import org.springframework.batch.core.launch.JobLauncher;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
@@ -23,26 +25,32 @@ public class JobFrostConfigScheduler {
     private final JobLauncher jobLauncher;
     private final Job frostConfigJob;
     private final JobExplorer jobExplorer;
-
-    @Value("${app.scheduler.frost.config.enabled:true}")
-    private boolean frostConfigEnabled;
+    private final SchedulerControlService schedulerControlService;
+    private final DynamicCronGateService dynamicCronGateService;
 
     private final Lock frostConfigLock = new ReentrantLock();
 
     public JobFrostConfigScheduler(
             JobLauncher jobLauncher,
             @Qualifier("frostConfigJob") Job frostConfigJob,
-            JobExplorer jobExplorer
+            JobExplorer jobExplorer,
+            SchedulerControlService schedulerControlService,
+            DynamicCronGateService dynamicCronGateService
     ) {
         this.jobLauncher = jobLauncher;
         this.frostConfigJob = frostConfigJob;
         this.jobExplorer = jobExplorer;
+        this.schedulerControlService = schedulerControlService;
+        this.dynamicCronGateService = dynamicCronGateService;
     }
 
 
-    @Scheduled(cron = "${app.scheduler.frost.config.cron:0 0/20 * * * *}")
+    @Scheduled(fixedDelayString = "${backoffice.scheduler.tick-ms:1000}")
     public void runFrostConfigJob() throws Exception {
-        if (!frostConfigEnabled) {
+        if (!schedulerControlService.isEnabled(JobKey.FROST_CONFIG)) {
+            return;
+        }
+        if (!dynamicCronGateService.shouldTrigger(JobKey.FROST_CONFIG)) {
             return;
         }
         if (!frostConfigLock.tryLock()) {

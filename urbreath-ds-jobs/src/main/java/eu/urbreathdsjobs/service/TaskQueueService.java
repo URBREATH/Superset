@@ -24,5 +24,9 @@ public class TaskQueueService {
     public void updateStatusAndNote(Long taskId, int status, String note) {
         taskQueueDao.updateStatusAndNote(taskId, status, note);
     }
+
+    public int resetStuckInProgressByBatchId(Long batchId, int olderThanMinutes) {
+        return taskQueueDao.resetStuckInProgressByBatchId(batchId, olderThanMinutes);
+    }
 }
 

@@ -33,6 +33,16 @@ public class TaskQueueDao {
             WHERE id = ?
             """;
 
+    private static final String RESET_STUCK_IN_PROGRESS = """
+            UPDATE batch_job_task_queue
+            SET status = 0,
+                note = CONCAT(COALESCE(note, ''), '\n[RESET BACKOFFICE ', now(), ']'),
+                date_mod = now()
+            WHERE id_batch = ?
+              AND status = 1
+              AND date_mod < now() - (? * interval '1 minute')
+            """;
+
     private final JdbcTemplate jdbcTemplate;
 
     public BatchJobTask findNextPendingByBatchId(Long batchId) {
@@ -63,6 +73,10 @@ public class TaskQueueDao {
 
     public int updateStatusAndNote(Long taskId, int status, String note) {
         return jdbcTemplate.update(UPDATE_STATUS_AND_NOTE, status, note, taskId);
+    }
+
+    public int resetStuckInProgressByBatchId(Long batchId, int olderThanMinutes) {
+        return jdbcTemplate.update(RESET_STUCK_IN_PROGRESS, batchId, olderThanMinutes);
     }
 }
 

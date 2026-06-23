@@ -137,3 +137,11 @@ logging:
     eu.urbreathdsjobs.client.frost.FrostClientService: INFO
     eu.urbreathdsjobs.client.frost.FrostResponseHandlerService: INFO
     eu.urbreathdsjobs.job.FrostImportTasklet: INFO
+
+backoffice:
+  scheduler:
+    tick-ms: 1000
+  security:
+    token: ${BACKOFFICE_TOKEN:local-test-token}
+    allow-query-param: false
+
