@@ -1,47 +1,119 @@
-# superset_config.py – compatibile con Apache Superset 6.x
-# NOTA: rimosso "from flask_talisman import Talisman" e la chiamata Talisman()
-# In Superset 6.x Talisman è gestito internamente tramite la variabile TALISMAN_ENABLED
+import os
 
-SECRET_KEY = "eRrH2s+nvWP1oiiViUELBCuXsUHr0TRf4VlRolsDkzss5qRviF2n08jY"
-SUPERSET_ENV = "production"
-SUPERSET_LOAD_EXAMPLES = "no"
-APP_NAME = "URBreath"
+from flask_appbuilder.security.manager import AUTH_DB, AUTH_OAUTH
+from superset.security import SupersetSecurityManager
 
-SQLALCHEMY_DATABASE_URI = "postgresql+psycopg2://superset:superset@db_v6:5432/superset"
-MAPBOX_API_KEY = "pk.eyJ1IjoiZXNwbzMiLCJhIjoiY21iN3V6eXdwMDAyNDJscXQ5cnR2MjZ0ayJ9.kMZ3pI6upOC4NEuC5H-e0g"
+
+def _env_bool(name: str, default: bool = False) -> bool:
+    value = os.getenv(name)
+    if value is None:
+        return default
+    return value.strip().lower() in {"1", "true", "yes", "on"}
+
+
+SECRET_KEY = os.getenv("SUPERSET_SECRET_KEY", "CHANGE_ME_SUPERSET_SECRET_KEY")
+SUPERSET_ENV = os.getenv("SUPERSET_ENV", "production")
+SUPERSET_LOAD_EXAMPLES = os.getenv("SUPERSET_LOAD_EXAMPLES", "no")
+APP_NAME = os.getenv("SUPERSET_APP_NAME", "URBreath")
+
+SQLALCHEMY_DATABASE_URI = os.getenv(
+    "SQLALCHEMY_DATABASE_URI",
+    "postgresql+psycopg2://superset:superset@db_v6:5432/superset",
+)
+MAPBOX_API_KEY = os.getenv("MAPBOX_API_KEY", "")
 PYTHONPATH = "/app/pythonpath"
 
-# Ruolo pubblico per embedding (solo dev/test)
-AUTH_ROLE_PUBLIC = "Admin"
+# Keep current embedded behavior until OAuth rollout is explicitly enabled.
+ENABLE_KEYCLOAK_OAUTH = _env_bool("ENABLE_KEYCLOAK_OAUTH", False)
 
-# CSRF disabilitato per le chiamate embedded
-WTF_CSRF_ENABLED = False
-
-# Feature flags
 FEATURE_FLAGS = {
     "ALERT_REPORTS": True,
     "EMBEDDED_SUPERSET": True,
 }
 
-# Talisman: in Superset 6.x si disabilita tramite questa variabile
-# NON usare Talisman() direttamente – causerebbe un ImportError/RuntimeError all'avvio
-TALISMAN_ENABLED = False
+TALISMAN_ENABLED = _env_bool("TALISMAN_ENABLED", False)
+ENABLE_CORS = _env_bool("ENABLE_CORS", True)
+ENABLE_PROXY_FIX = _env_bool("ENABLE_PROXY_FIX", True)
+WTF_CSRF_ENABLED = _env_bool("WTF_CSRF_ENABLED", False)
 
-# Permette embedding in iframe da qualsiasi origine
-HTTP_HEADERS = {"X-Frame-Options": "ALLOWALL"}
-
-# CORS
-ENABLE_CORS = True
-ENABLE_PROXY_FIX = True
+# Dev-friendly defaults; restrict in production with explicit origins.
+HTTP_HEADERS = {"X-Frame-Options": os.getenv("X_FRAME_OPTIONS", "ALLOWALL")}
 CORS_OPTIONS = {
     "supports_credentials": True,
     "allow_headers": ["*"],
     "expose_headers": ["*"],
     "resources": ["/*"],
-    "origins": ["*"],
+    "origins": [x.strip() for x in os.getenv("CORS_ALLOWED_ORIGINS", "*").split(",") if x.strip()],
 }
 
-SUPERSET_WEBSERVER_TIMEOUT = 300
-SQLLAB_ASYNC_TIME_LIMIT_SEC = 300
+SUPERSET_WEBSERVER_TIMEOUT = int(os.getenv("SUPERSET_WEBSERVER_TIMEOUT", "300"))
+SQLLAB_ASYNC_TIME_LIMIT_SEC = int(os.getenv("SQLLAB_ASYNC_TIME_LIMIT_SEC", "300"))
+GUEST_ROLE_NAME = os.getenv("GUEST_ROLE_NAME", "Gamma")
 
-GUEST_ROLE_NAME = "Gamma"
+
+class KeycloakSecurityManager(SupersetSecurityManager):
+    def oauth_user_info(self, provider, response=None):
+        if provider != "keycloak":
+            return {}
+
+        me = self.appbuilder.sm.oauth_remotes[provider].get("userinfo").json()
+        role_keys = []
+
+        realm_access = me.get("realm_access") or {}
+        if isinstance(realm_access, dict):
+            role_keys.extend(realm_access.get("roles") or [])
+
+        resource_access = me.get("resource_access") or {}
+        if isinstance(resource_access, dict):
+            client_roles = resource_access.get(os.getenv("KEYCLOAK_CLIENT_ID", "superset"), {})
+            if isinstance(client_roles, dict):
+                role_keys.extend(client_roles.get("roles") or [])
+
+        return {
+            "username": me.get("preferred_username", me.get("email", "")),
+            "email": me.get("email", ""),
+            "first_name": me.get("given_name", ""),
+            "last_name": me.get("family_name", ""),
+            "role_keys": list(dict.fromkeys(role_keys)),
+        }
+
+
+AUTH_USER_REGISTRATION = True
+AUTH_USER_REGISTRATION_ROLE = os.getenv("AUTH_USER_REGISTRATION_ROLE", "Gamma")
+AUTH_ROLES_SYNC_AT_LOGIN = _env_bool("AUTH_ROLES_SYNC_AT_LOGIN", True)
+AUTH_ROLES_MAPPING = {
+    "superset_admin": ["Admin"],
+    "superset_alpha": ["Alpha"],
+    "superset_gamma": ["Gamma"],
+}
+
+if ENABLE_KEYCLOAK_OAUTH:
+    AUTH_TYPE = AUTH_OAUTH
+    CUSTOM_SECURITY_MANAGER = KeycloakSecurityManager
+
+    keycloak_host = os.getenv("KEYCLOAK_BASE_URL", "https://keycloak.example.org")
+    keycloak_realm = os.getenv("KEYCLOAK_REALM", "urbreath")
+    keycloak_client_id = os.getenv("KEYCLOAK_CLIENT_ID", "superset")
+    keycloak_client_secret = os.getenv("KEYCLOAK_CLIENT_SECRET", "CHANGE_ME_KEYCLOAK_CLIENT_SECRET")
+    keycloak_oidc_base = f"{keycloak_host}/realms/{keycloak_realm}/protocol/openid-connect"
+
+    OAUTH_PROVIDERS = [
+        {
+            "name": "keycloak",
+            "token_key": "access_token",
+            "icon": "fa-key",
+            "remote_app": {
+                "client_id": keycloak_client_id,
+                "client_secret": keycloak_client_secret,
+                "client_kwargs": {"scope": "openid profile email"},
+                "access_token_url": f"{keycloak_oidc_base}/token",
+                "authorize_url": f"{keycloak_oidc_base}/auth",
+                "api_base_url": f"{keycloak_oidc_base}/",
+                "userinfo_endpoint": f"{keycloak_oidc_base}/userinfo",
+            },
+        }
+    ]
+else:
+    AUTH_TYPE = AUTH_DB
+    # Current behavior kept for embedded flow while OAuth rollout is staged.
+    AUTH_ROLE_PUBLIC = os.getenv("AUTH_ROLE_PUBLIC", "Admin")
