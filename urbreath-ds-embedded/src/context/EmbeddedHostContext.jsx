@@ -43,6 +43,28 @@ function normalizeHostPayload(payload) {
   };
 }
 
+function maskToken(token) {
+  if (typeof token !== "string" || token.length === 0) {
+    return token;
+  }
+  if (token.length <= 12) {
+    return "***";
+  }
+  return `${token.slice(0, 6)}...${token.slice(-4)}`;
+}
+
+function toLogSafePayload(payload) {
+  if (!payload || typeof payload !== "object") {
+    return payload;
+  }
+
+  return {
+    ...payload,
+    accessToken: maskToken(payload.accessToken),
+    refreshToken: maskToken(payload.refreshToken),
+  };
+}
+
 export function EmbeddedHostProvider({ children }) {
   const [hostConfig, setHostConfig] = useState(() => ({
     embedded: parseEmbeddedFromQuery(),
@@ -69,6 +91,22 @@ export function EmbeddedHostProvider({ children }) {
       if (!payload) {
         return;
       }
+
+      // Logga sempre in console per troubleshooting dell'integrazione host -> iframe.
+      console.info("[EmbeddedHostContext] postMessage ricevuto", {
+        origin: event.origin,
+        payload: toLogSafePayload(payload),
+      });
+
+      // Espone una coda log opzionale globale utile per debug automatici/e2e.
+      if (!Array.isArray(window.__URBREATH_POSTMESSAGE_LOGS__)) {
+        window.__URBREATH_POSTMESSAGE_LOGS__ = [];
+      }
+      window.__URBREATH_POSTMESSAGE_LOGS__.push({
+        timestamp: new Date().toISOString(),
+        origin: event.origin,
+        payload: toLogSafePayload(payload),
+      });
 
       setHostConfig((previous) => ({
         ...previous,
