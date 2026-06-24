@@ -12,6 +12,8 @@ function SupersetEmbed({ dashboardId }) {
 
     const supersetUrl = process.env.REACT_APP_SUPERSET_URL;
     const supersetApiUrl = supersetUrl + "/api/v1/security";
+    const technicalUsername = process.env.REACT_APP_SUPERSET_TECHNICAL_USERNAME;
+    const technicalPassword = process.env.REACT_APP_SUPERSET_TECHNICAL_PASSWORD;
 
     // Usa il token ricevuto dal container host quando presente, altrimenti fallback locale.
     const getSupersetAccessToken = async () => {
@@ -19,11 +21,17 @@ function SupersetEmbed({ dashboardId }) {
         return hostAccessToken;
       }
 
+      if (!technicalUsername || !technicalPassword) {
+        throw new Error(
+          "Missing REACT_APP_SUPERSET_TECHNICAL_USERNAME / REACT_APP_SUPERSET_TECHNICAL_PASSWORD for embedded fallback login"
+        );
+      }
+
       const loginResp = await axios.post(
         supersetApiUrl + "/login",
         {
-          username: "admin",
-          password: "admin",
+          username: technicalUsername,
+          password: technicalPassword,
           provider: "db",
           refresh: true,
         },

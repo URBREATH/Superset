@@ -1,14 +1,38 @@
 version: "3.9"
 
 # Staging Superset with Keycloak OAuth enabled.
-# This stack runs only an additional Superset instance and reuses db_v6/redis_v6
-# already running in docker-compose-v6.yml on the external network superset_net_v6.
+# Usa un DB dedicato (db_keycloak) per evitare conflitti di chiave di cifratura
+# con il DB condiviso di superset_v6.
 
 networks:
-  superset_net_v6:
-    external: true
+  superset_net_keycloak:
+    driver: bridge
 
 services:
+
+  db_keycloak:
+    image: postgres:16
+    container_name: superset-db-keycloak
+    environment:
+      POSTGRES_DB: superset_kc
+      POSTGRES_USER: superset
+      POSTGRES_PASSWORD: superset
+    volumes:
+      - db_data_keycloak:/var/lib/postgresql/data
+    networks:
+      - superset_net_keycloak
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U superset -d superset_kc"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis_keycloak:
+    image: redis:7-alpine
+    container_name: redis_keycloak
+    networks:
+      - superset_net_keycloak
+
   superset_keycloak_v6:
     build: .
     container_name: superset_keycloak_v6
@@ -17,10 +41,10 @@ services:
     env_file:
       - .env.v6.keycloak
     environment:
-      - SQLALCHEMY_DATABASE_URI=postgresql+psycopg2://superset:superset@db_v6:5432/superset
-      - DATABASE_HOST=db_v6
+      - SQLALCHEMY_DATABASE_URI=postgresql+psycopg2://superset:superset@db_keycloak:5432/superset_kc
+      - DATABASE_HOST=db_keycloak
       - DATABASE_PORT=5432
-      - DATABASE_DB=superset
+      - DATABASE_DB=superset_kc
       - DATABASE_USER=superset
       - DATABASE_PASSWORD=superset
       - PYTHONPATH=/app/pythonpath
@@ -29,7 +53,12 @@ services:
       - ./assets/superset-logo-horiz.png:/app/superset/static/assets/images/superset-logo-horiz.png
       - ./superset_config.py:/app/pythonpath/superset_config.py
     networks:
-      - superset_net_v6
+      - superset_net_keycloak
+    depends_on:
+      db_keycloak:
+        condition: service_healthy
+      redis_keycloak:
+        condition: service_started
     entrypoint:
       - bash
       - -c
@@ -39,9 +68,10 @@ services:
         superset fab create-admin --username admin --firstname Admin --lastname User --email admin@superset.local --password admin 2>/dev/null || true &&
         superset init &&
         echo 'Superset Keycloak staging ready!' &&
-        gunicorn --bind 0.0.0.0:8088 --workers 4 --timeout 120 --limit-request-line 0 'superset.app:create_app()'
+        gunicorn --bind 0.0.0.0:8088 --workers 1 --timeout 120 --limit-request-line 0 'superset.app:create_app()'
     restart: unless-stopped
 
 volumes:
   superset_home_v6_keycloak:
+  db_data_keycloak:
 

@@ -52,6 +52,27 @@ GUEST_ROLE_NAME = os.getenv("GUEST_ROLE_NAME", "Gamma")
 
 
 class KeycloakSecurityManager(SupersetSecurityManager):
+    def auth_user_oauth(self, userinfo):
+        """Robust fallback when OAuth user creation fails and user already exists."""
+        try:
+            return super().auth_user_oauth(userinfo)
+        except Exception as ex:  # noqa: BLE001
+            username = (userinfo or {}).get("username")
+            email = (userinfo or {}).get("email")
+
+            print(
+                "[KEYCLOAK DEBUG] auth_user_oauth fallback",
+                {"username": username, "email": email, "error": str(ex)},
+            )
+
+            user = None
+            if email:
+                user = self.find_user(email=email)
+            if not user and username:
+                user = self.find_user(username=username)
+
+            return user
+
     def oauth_user_info(self, provider, response=None):
         if provider != "keycloak":
             return {}
@@ -69,8 +90,20 @@ class KeycloakSecurityManager(SupersetSecurityManager):
             if isinstance(client_roles, dict):
                 role_keys.extend(client_roles.get("roles") or [])
 
+        username = me.get("email") or me.get("preferred_username") or me.get("sub") or ""
+
+        print(
+            "[KEYCLOAK DEBUG] oauth_user_info",
+            {
+                "preferred_username": me.get("preferred_username"),
+                "email": me.get("email"),
+                "resolved_username": username,
+                "role_keys": list(dict.fromkeys(role_keys)),
+            },
+        )
+
         return {
-            "username": me.get("preferred_username", me.get("email", "")),
+            "username": username,
             "email": me.get("email", ""),
             "first_name": me.get("given_name", ""),
             "last_name": me.get("family_name", ""),
@@ -95,7 +128,21 @@ if ENABLE_KEYCLOAK_OAUTH:
     keycloak_realm = os.getenv("KEYCLOAK_REALM", "urbreath")
     keycloak_client_id = os.getenv("KEYCLOAK_CLIENT_ID", "superset")
     keycloak_client_secret = os.getenv("KEYCLOAK_CLIENT_SECRET", "CHANGE_ME_KEYCLOAK_CLIENT_SECRET")
-    keycloak_oidc_base = f"{keycloak_host}/realms/{keycloak_realm}/protocol/openid-connect"
+    keycloak_realm_base = f"{keycloak_host}/realms/{keycloak_realm}"
+    keycloak_oidc_base = f"{keycloak_realm_base}/protocol/openid-connect"
+    keycloak_metadata_url = f"{keycloak_realm_base}/.well-known/openid-configuration"
+    keycloak_jwks_uri = os.getenv("KEYCLOAK_JWKS_URI", f"{keycloak_oidc_base}/certs")
+
+    # Debug: stampa gli URL generati per troubleshooting
+    print(f"[KEYCLOAK DEBUG] KEYCLOAK_BASE_URL: {keycloak_host}")
+    print(f"[KEYCLOAK DEBUG] KEYCLOAK_REALM: {keycloak_realm}")
+    print(f"[KEYCLOAK DEBUG] KEYCLOAK_REALM_BASE: {keycloak_realm_base}")
+    print(f"[KEYCLOAK DEBUG] KEYCLOAK_OIDC_BASE: {keycloak_oidc_base}")
+    print(f"[KEYCLOAK DEBUG] KEYCLOAK_METADATA_URL: {keycloak_metadata_url}")
+    print(f"[KEYCLOAK DEBUG] KEYCLOAK_JWKS_URI: {keycloak_jwks_uri}")
+    print(f"[KEYCLOAK DEBUG] authorize_url: {keycloak_oidc_base}/auth")
+    print(f"[KEYCLOAK DEBUG] token_url: {keycloak_oidc_base}/token")
+    print(f"[KEYCLOAK DEBUG] userinfo_endpoint: {keycloak_oidc_base}/userinfo")
 
     OAUTH_PROVIDERS = [
         {
@@ -106,6 +153,8 @@ if ENABLE_KEYCLOAK_OAUTH:
                 "client_id": keycloak_client_id,
                 "client_secret": keycloak_client_secret,
                 "client_kwargs": {"scope": "openid profile email"},
+                "server_metadata_url": keycloak_metadata_url,
+                "jwks_uri": keycloak_jwks_uri,
                 "access_token_url": f"{keycloak_oidc_base}/token",
                 "authorize_url": f"{keycloak_oidc_base}/auth",
                 "api_base_url": f"{keycloak_oidc_base}/",
