@@ -1,4 +1,6 @@
 import os
+import json
+import base64
 
 from flask_appbuilder.security.manager import AUTH_DB, AUTH_OAUTH
 from superset.security import SupersetSecurityManager
@@ -52,26 +54,19 @@ GUEST_ROLE_NAME = os.getenv("GUEST_ROLE_NAME", "Gamma")
 
 
 class KeycloakSecurityManager(SupersetSecurityManager):
-    def auth_user_oauth(self, userinfo):
-        """Robust fallback when OAuth user creation fails and user already exists."""
+
+    @staticmethod
+    def _decode_jwt_payload(token):
+        if not token or token.count(".") < 2:
+            return {}
+
         try:
-            return super().auth_user_oauth(userinfo)
-        except Exception as ex:  # noqa: BLE001
-            username = (userinfo or {}).get("username")
-            email = (userinfo or {}).get("email")
-
-            print(
-                "[KEYCLOAK DEBUG] auth_user_oauth fallback",
-                {"username": username, "email": email, "error": str(ex)},
-            )
-
-            user = None
-            if email:
-                user = self.find_user(email=email)
-            if not user and username:
-                user = self.find_user(username=username)
-
-            return user
+            payload_part = token.split(".")[1]
+            padding = "=" * (-len(payload_part) % 4)
+            decoded = base64.urlsafe_b64decode(payload_part + padding)
+            return json.loads(decoded.decode("utf-8"))
+        except Exception:  # noqa: BLE001
+            return {}
 
     def oauth_user_info(self, provider, response=None):
         if provider != "keycloak":
@@ -90,17 +85,21 @@ class KeycloakSecurityManager(SupersetSecurityManager):
             if isinstance(client_roles, dict):
                 role_keys.extend(client_roles.get("roles") or [])
 
-        username = me.get("email") or me.get("preferred_username") or me.get("sub") or ""
+        # Keycloak userinfo may not include role claims. Fallback to access token payload.
+        if not role_keys and isinstance(response, dict):
+            token_claims = self._decode_jwt_payload(response.get("access_token"))
 
-        print(
-            "[KEYCLOAK DEBUG] oauth_user_info",
-            {
-                "preferred_username": me.get("preferred_username"),
-                "email": me.get("email"),
-                "resolved_username": username,
-                "role_keys": list(dict.fromkeys(role_keys)),
-            },
-        )
+            token_realm_access = token_claims.get("realm_access") or {}
+            if isinstance(token_realm_access, dict):
+                role_keys.extend(token_realm_access.get("roles") or [])
+
+            token_resource_access = token_claims.get("resource_access") or {}
+            if isinstance(token_resource_access, dict):
+                token_client_roles = token_resource_access.get(os.getenv("KEYCLOAK_CLIENT_ID", "superset"), {})
+                if isinstance(token_client_roles, dict):
+                    role_keys.extend(token_client_roles.get("roles") or [])
+
+        username = me.get("email") or me.get("preferred_username") or me.get("sub") or ""
 
         return {
             "username": username,
@@ -133,17 +132,6 @@ if ENABLE_KEYCLOAK_OAUTH:
     keycloak_metadata_url = f"{keycloak_realm_base}/.well-known/openid-configuration"
     keycloak_jwks_uri = os.getenv("KEYCLOAK_JWKS_URI", f"{keycloak_oidc_base}/certs")
 
-    # Debug: stampa gli URL generati per troubleshooting
-    print(f"[KEYCLOAK DEBUG] KEYCLOAK_BASE_URL: {keycloak_host}")
-    print(f"[KEYCLOAK DEBUG] KEYCLOAK_REALM: {keycloak_realm}")
-    print(f"[KEYCLOAK DEBUG] KEYCLOAK_REALM_BASE: {keycloak_realm_base}")
-    print(f"[KEYCLOAK DEBUG] KEYCLOAK_OIDC_BASE: {keycloak_oidc_base}")
-    print(f"[KEYCLOAK DEBUG] KEYCLOAK_METADATA_URL: {keycloak_metadata_url}")
-    print(f"[KEYCLOAK DEBUG] KEYCLOAK_JWKS_URI: {keycloak_jwks_uri}")
-    print(f"[KEYCLOAK DEBUG] authorize_url: {keycloak_oidc_base}/auth")
-    print(f"[KEYCLOAK DEBUG] token_url: {keycloak_oidc_base}/token")
-    print(f"[KEYCLOAK DEBUG] userinfo_endpoint: {keycloak_oidc_base}/userinfo")
-
     OAUTH_PROVIDERS = [
         {
             "name": "keycloak",
@@ -165,4 +153,4 @@ if ENABLE_KEYCLOAK_OAUTH:
 else:
     AUTH_TYPE = AUTH_DB
     # Current behavior kept for embedded flow while OAuth rollout is staged.
-    AUTH_ROLE_PUBLIC = os.getenv("AUTH_ROLE_PUBLIC", "Admin")
+    AUTH_ROLE_PUBLIC = os.getenv("AUTH_ROLE_PUBLIC", "Public")
