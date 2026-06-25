@@ -6,7 +6,7 @@ while keeping the current embedded flow unchanged.
 ## Goal
 
 - Keep current stack (`docker-compose-v6.yml`) for embedded dashboards.
-- Run a second Superset instance on `http://localhost:17790` with Keycloak OAuth enabled.
+- Run the Superset instance on `http://localhost:17789` with Keycloak OAuth enabled.
 - Validate login, user provisioning, and role mapping before any production switch.
 
 ## Files
@@ -48,7 +48,7 @@ In Keycloak client `superset`:
 
 - Client type: confidential (OIDC)
 - Valid redirect URIs:
-  - `http://localhost:17790/oauth-authorized/keycloak`
+  - `http://localhost:17789/oauth-authorized/keycloak`
   - and/or your public HTTPS URL equivalent
 - Web origins:
   - explicit domains (avoid `*` outside local tests)
@@ -74,7 +74,7 @@ docker compose --env-file ".env.v6.keycloak" -f "docker-compose-v6-keycloak.yml"
 
 ## 5) Validation checklist
 
-Open `http://localhost:17790` and verify:
+Open `http://localhost:17789` and verify:
 
 1. `Login with keycloak` button is available.
 2. Redirect to Keycloak works.
