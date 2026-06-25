@@ -4,6 +4,8 @@
 networks:
   superset_net_v6:
     external: true
+  superset_net_keycloak:
+    driver: bridge
 
 services:
 
@@ -44,6 +46,68 @@ services:
         superset init &&
         echo 'Superset 6.1.0 ready!' &&
         gunicorn --bind 0.0.0.0:8088 --workers 4 --timeout 120 --limit-request-line 0 'superset.app:create_app()'
+    restart: unless-stopped
+
+  # ?? Superset with Keycloak OAuth enabled (staging/prod) ???????????
+  db_keycloak:
+    image: postgres:16
+    container_name: superset-db-keycloak
+    environment:
+      POSTGRES_DB: superset_kc
+      POSTGRES_USER: superset
+      POSTGRES_PASSWORD: superset
+    volumes:
+      - db_data_keycloak:/var/lib/postgresql/data
+    networks:
+      - superset_net_keycloak
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U superset -d superset_kc"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis_keycloak:
+    image: redis:7-alpine
+    container_name: redis_keycloak
+    networks:
+      - superset_net_keycloak
+
+  superset_keycloak_v6:
+    build: .
+    container_name: superset_keycloak_v6
+    ports:
+      - "17790:8088"
+    env_file:
+      - .env.v6.keycloak
+    environment:
+      - SQLALCHEMY_DATABASE_URI=postgresql+psycopg2://superset:superset@db_keycloak:5432/superset_kc
+      - DATABASE_HOST=db_keycloak
+      - DATABASE_PORT=5432
+      - DATABASE_DB=superset_kc
+      - DATABASE_USER=superset
+      - DATABASE_PASSWORD=superset
+      - PYTHONPATH=/app/pythonpath
+    volumes:
+      - superset_home_v6_keycloak:/app/superset_home
+      - ./assets/superset-logo-horiz.png:/app/superset/static/assets/images/superset-logo-horiz.png
+      - ./superset_config.py:/app/pythonpath/superset_config.py
+    networks:
+      - superset_net_keycloak
+    depends_on:
+      db_keycloak:
+        condition: service_healthy
+      redis_keycloak:
+        condition: service_started
+    entrypoint:
+      - bash
+      - -c
+      - |
+        echo 'Waiting for DB...' &&
+        superset db upgrade &&
+        superset fab create-admin --username admin --firstname Admin --lastname User --email admin@superset.local --password admin 2>/dev/null || true &&
+        superset init &&
+        echo 'Superset Keycloak staging ready!' &&
+        gunicorn --bind 0.0.0.0:8088 --workers 1 --timeout 120 --limit-request-line 0 'superset.app:create_app()'
     restart: unless-stopped
 
   # ?? PostgreSQL per metadati Superset (DB fresco) ??????????????????
@@ -112,7 +176,7 @@ services:
     ports:
       - "3001:80"
     depends_on:
-      - superset_v6
+      - superset_keycloak_v6
     networks:
       - superset_net_v6
 
@@ -120,4 +184,6 @@ volumes:
   db_data_v6:
   superset_home_v6:
   other_db_data_v6:
+  superset_home_v6_keycloak:
+  db_data_keycloak:
 
