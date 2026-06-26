@@ -88,4 +88,3 @@ Open `http://localhost:17789` and verify:
 Set-Location "C:\Progetti\URBreath\Superset"
 docker compose --env-file ".env.v6.keycloak" -f "docker-compose-v6-keycloak.yml" down
 ```
-

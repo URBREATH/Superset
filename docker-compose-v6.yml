@@ -34,7 +34,7 @@ services:
       - superset_net_keycloak
 
   superset_keycloak_v6:
-    build: .
+    image: registry.urbreath.tech/superset_dev_v6-superset_v6:latest
     container_name: superset_keycloak_v6
     ports:
       - "17789:8088"
@@ -52,8 +52,6 @@ services:
       - PYTHONPATH=/app/pythonpath
     volumes:
       - superset_home_v6_keycloak:/app/superset_home
-      - ./assets/superset-logo-horiz.png:/app/superset/static/assets/images/superset-logo-horiz.png
-      - ./superset_config.py:/app/pythonpath/superset_config.py
     networks:
       - superset_net_keycloak
     depends_on:
@@ -149,4 +147,3 @@ volumes:
   other_db_data_v6:
   superset_home_v6_keycloak:
   db_data_keycloak:
-
