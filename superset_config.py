@@ -25,8 +25,8 @@ SQLALCHEMY_DATABASE_URI = os.getenv(
 MAPBOX_API_KEY = os.getenv("MAPBOX_API_KEY", "")
 PYTHONPATH = "/app/pythonpath"
 
-# Keep current embedded behavior until OAuth rollout is explicitly enabled.
-ENABLE_KEYCLOAK_OAUTH = _env_bool("ENABLE_KEYCLOAK_OAUTH", False)
+# Keycloak-first mode: if env loading fails in runtime, keep OAuth enabled by default.
+ENABLE_KEYCLOAK_OAUTH = _env_bool("ENABLE_KEYCLOAK_OAUTH", True)
 
 FEATURE_FLAGS = {
     "ALERT_REPORTS": True,
