@@ -69,7 +69,7 @@ Run Keycloak staging Superset:
 ```powershell
 Set-Location "C:\Progetti\URBreath\Superset"
 docker compose --env-file ".env.v6.keycloak" -f "docker-compose-v6-keycloak.yml" up -d --build
-docker compose --env-file ".env.v6.keycloak" -f "docker-compose-v6-keycloak.yml" logs -f superset_keycloak_v6
+docker compose --env-file ".env.v6.keycloak" -f "docker-compose-v6-keycloak.yml" logs -f superset_v6
 ```
 
 ## 5) Validation checklist
