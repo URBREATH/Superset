@@ -31,53 +31,46 @@ services:
     ports:
       - "17789:8088"
     environment:
-      - SUPERSET_ENV=production
-      - SUPERSET_LOAD_EXAMPLES=no
-      - SUPERSET_ADMIN_USERNAME=admin
-      - SUPERSET_ADMIN_EMAIL=admin@superset.local
-      - SUPERSET_ADMIN_PASSWORD=admin
-      - SUPERSET_ADMIN_FIRSTNAME=Admin
-      - SUPERSET_ADMIN_LASTNAME=User
-      - SUPERSET_SECRET_KEY=CHANGE_ME_SUPERSET_SECRET_KEY_LONG_RANDOM
-      - ENABLE_KEYCLOAK_OAUTH=true
-      - KEYCLOAK_BASE_URL=https://keycloak-dev.urbreath.tech/auth
-      - KEYCLOAK_REALM=urbreath-auth
-      - KEYCLOAK_CLIENT_ID=urbreath
-      - KEYCLOAK_CLIENT_SECRET=w0Ebfzs3lqjorCWXypaj0wzyLL8TUqLi
-      - AUTH_USER_REGISTRATION_ROLE=Gamma
-      - AUTH_ROLES_SYNC_AT_LOGIN=true
-      - ENABLE_PROXY_FIX=true
-      - WTF_CSRF_ENABLED=false
-      - TALISMAN_ENABLED=false
-      - X_FRAME_OPTIONS=ALLOWALL
-      - CORS_ALLOWED_ORIGINS=http://localhost:17789,http://localhost:3000,http://localhost:3001,https://superset-dev.urbreath.tech
+      - SUPERSET_ENV=${SUPERSET_ENV}
+      - SUPERSET_LOAD_EXAMPLES=${SUPERSET_LOAD_EXAMPLES}
+      - SUPERSET_ADMIN_USERNAME=${SUPERSET_ADMIN_USERNAME}
+      - SUPERSET_ADMIN_EMAIL=${SUPERSET_ADMIN_EMAIL}
+      - SUPERSET_ADMIN_PASSWORD=${SUPERSET_ADMIN_PASSWORD}
+      - SUPERSET_ADMIN_FIRSTNAME=${SUPERSET_ADMIN_FIRSTNAME}
+      - SUPERSET_ADMIN_LASTNAME=${SUPERSET_ADMIN_LASTNAME}
+      - SUPERSET_SECRET_KEY=${SUPERSET_SECRET_KEY}
+      - ENABLE_KEYCLOAK_OAUTH=${ENABLE_KEYCLOAK_OAUTH}
+      - KEYCLOAK_BASE_URL=${KEYCLOAK_BASE_URL}
+      - KEYCLOAK_REALM=${KEYCLOAK_REALM}
+      - KEYCLOAK_CLIENT_ID=${KEYCLOAK_CLIENT_ID}
+      - KEYCLOAK_CLIENT_SECRET=${KEYCLOAK_CLIENT_SECRET}
+      - AUTH_USER_REGISTRATION_ROLE=${AUTH_USER_REGISTRATION_ROLE}
+      - AUTH_ROLES_SYNC_AT_LOGIN=${AUTH_ROLES_SYNC_AT_LOGIN}
+      - ENABLE_PROXY_FIX=${ENABLE_PROXY_FIX}
+      - WTF_CSRF_ENABLED=${WTF_CSRF_ENABLED}
+      - TALISMAN_ENABLED=${TALISMAN_ENABLED}
+      - X_FRAME_OPTIONS=${X_FRAME_OPTIONS}
+      - CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS}
       - SQLALCHEMY_DATABASE_URI=postgresql+psycopg2://superset:superset@db_v6:5432/superset
-      - MAPBOX_API_KEY=pk.eyJ1IjoiZXNwbzMiLCJhIjoiY21iN3V6eXdwMDAyNDJscXQ5cnR2MjZ0ayJ9.kMZ3pI6upOC4NEuC5H-e0g
+      - MAPBOX_API_KEY=${MAPBOX_API_KEY}
       - PYTHONPATH=/app/pythonpath
     volumes:
       - superset_home_v6:/app/superset_home
     networks:
       - superset_net_v6
     depends_on:
-      db_v6:
-        condition: service_healthy
-      redis_v6:
-        condition: service_started
-    entrypoint:
-      - bash
-      - -c
-      - |
-        echo 'Waiting for DB...' &&
-        superset db upgrade &&
-        superset fab create-admin --username "${SUPERSET_ADMIN_USERNAME}" --firstname "${SUPERSET_ADMIN_FIRSTNAME}" --lastname "${SUPERSET_ADMIN_LASTNAME}" --email "${SUPERSET_ADMIN_EMAIL}" --password "${SUPERSET_ADMIN_PASSWORD}" 2>/dev/null || true &&
-        superset init &&
-        echo 'Superset Keycloak staging ready!' &&
-        gunicorn --bind 0.0.0.0:8088 --workers 1 --timeout 120 --limit-request-line 0 'superset.app:create_app()'
+      - db_v6
+      - redis_v6
+    entrypoint: >
+      bash -c "
+      superset db upgrade &&
+      superset fab create-admin --username ${SUPERSET_ADMIN_USERNAME} --firstname ${SUPERSET_ADMIN_FIRSTNAME} --lastname ${SUPERSET_ADMIN_LASTNAME} --email ${SUPERSET_ADMIN_EMAIL} --password ${SUPERSET_ADMIN_PASSWORD} 2>/dev/null || true &&
+      superset init && gunicorn --bind 0.0.0.0:8088 --workers 1 --timeout 120 'superset.app:create_app()'"
     restart: unless-stopped
 
   # ?? Redis ?????????????????????????????????????????????????????????
   redis_v6:
-    image: redis:7-alpine
+    image: redis:latest
     container_name: redis_v6
     networks:
       - superset_net_v6
@@ -118,8 +111,18 @@ services:
   embeddedsuperset_v6:
     build: ./urbreath-ds-embedded
     container_name: embeddedsuperset_v6
-    env_file:
-      - .env.v6
+    environment:
+      - REACT_APP_SUPERSET_URL=${REACT_APP_SUPERSET_URL}
+      - REACT_APP_SUPERSET_TECHNICAL_USERNAME=${REACT_APP_SUPERSET_TECHNICAL_USERNAME}
+      - REACT_APP_SUPERSET_TECHNICAL_PASSWORD=${REACT_APP_SUPERSET_TECHNICAL_PASSWORD}
+      - REACT_APP_DASHBOARD_MADRID=${REACT_APP_DASHBOARD_MADRID}
+      - REACT_APP_DASHBOARD_CLUJ=${REACT_APP_DASHBOARD_CLUJ}
+      - REACT_APP_DASHBOARD_TALLINN=${REACT_APP_DASHBOARD_TALLINN}
+      - REACT_APP_DASHBOARD_LEUVEN=${REACT_APP_DASHBOARD_LEUVEN}
+      - REACT_APP_DASHBOARD_MADRID_LINK=${REACT_APP_DASHBOARD_MADRID_LINK}
+      - REACT_APP_DASHBOARD_CLUJ_LINK=${REACT_APP_DASHBOARD_CLUJ_LINK}
+      - REACT_APP_DASHBOARD_LEUVEN_LINK=${REACT_APP_DASHBOARD_LEUVEN_LINK}
+      - REACT_APP_DASHBOARD_TALLINN_LINK=${REACT_APP_DASHBOARD_TALLINN_LINK}
     ports:
       - "3001:80"
     depends_on:
