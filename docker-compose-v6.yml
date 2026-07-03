@@ -54,6 +54,7 @@ services:
       - SQLALCHEMY_DATABASE_URI=postgresql+psycopg2://superset:superset@db_v6:5432/superset
       - MAPBOX_API_KEY=${MAPBOX_API_KEY}
       - PYTHONPATH=/app/pythonpath
+      - MAX_DASHBOARD_SIZE=10485760
     volumes:
       - superset_home_v6:/app/superset_home
     networks:
