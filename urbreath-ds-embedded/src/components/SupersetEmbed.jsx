@@ -1,11 +1,9 @@
 import React, { useEffect, useRef } from "react";
 import axios from "axios";
 import { embedDashboard } from "@superset-ui/embedded-sdk";
-import { useEmbeddedHostConfig } from "../context/EmbeddedHostContext";
 
 function SupersetEmbed({ dashboardId }) {
   const containerRef = useRef(null);
-  const { accessToken: hostAccessToken } = useEmbeddedHostConfig();
 
   useEffect(() => {
     if (!dashboardId || dashboardId.startsWith("PLACEHOLDER")) return;
@@ -15,15 +13,10 @@ function SupersetEmbed({ dashboardId }) {
     const technicalUsername = process.env.REACT_APP_SUPERSET_TECHNICAL_USERNAME;
     const technicalPassword = process.env.REACT_APP_SUPERSET_TECHNICAL_PASSWORD;
 
-    // Usa il token ricevuto dal container host quando presente, altrimenti fallback locale.
     const getSupersetAccessToken = async () => {
-      if (hostAccessToken) {
-        return hostAccessToken;
-      }
-
       if (!technicalUsername || !technicalPassword) {
         throw new Error(
-          "Missing REACT_APP_SUPERSET_TECHNICAL_USERNAME / REACT_APP_SUPERSET_TECHNICAL_PASSWORD for embedded fallback login"
+          "Missing REACT_APP_SUPERSET_TECHNICAL_USERNAME / REACT_APP_SUPERSET_TECHNICAL_PASSWORD for embedded technical login"
         );
       }
 
@@ -70,7 +63,7 @@ function SupersetEmbed({ dashboardId }) {
         supersetDomain: supersetUrl,
         mountPoint: containerRef.current,
         fetchGuestToken,
-        dashboardUiConfig: { hideTitle: true },
+        dashboardUiConfig: { hideTitle: true, hideChartControls: true },
       });
 
       // Imposta dimensioni iframe
@@ -83,7 +76,7 @@ function SupersetEmbed({ dashboardId }) {
     }
 
     loadDashboard().catch(console.error);
-  }, [dashboardId, hostAccessToken]);
+  }, [dashboardId]);
 
   return <div ref={containerRef} id="superset-container"></div>;
 }
