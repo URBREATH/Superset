@@ -35,6 +35,7 @@ ENABLE_KEYCLOAK_OAUTH = _env_bool("ENABLE_KEYCLOAK_OAUTH", True)
 FEATURE_FLAGS = {
     "ALERT_REPORTS": True,
     "EMBEDDED_SUPERSET": True,
+    "DASHBOARD_RBAC": _env_bool("DASHBOARD_RBAC", True),
 }
 
 TALISMAN_ENABLED = _env_bool("TALISMAN_ENABLED", False)
@@ -121,6 +122,16 @@ AUTH_ROLES_MAPPING = {
     "superset_admin": ["Admin"],
     "superset_alpha": ["Alpha"],
     "superset_gamma": ["Gamma"],
+    # City viewers get read-only dashboard access.
+    "Leuven_Viewer": ["Public"],
+    "Tallinn_Viewer": ["Public"],
+    "ClujNapoca_Viewer": ["Public"],
+    "Madrid_Viewer": ["Public"],
+    # City editors can edit their own dashboard, but should not manage data sources.
+    "Leuven_Editor": ["Gamma"],
+    "Tallinn_Editor": ["Gamma"],
+    "ClujNapoca_Editor": ["Gamma"],
+    "Madrid_Editor": ["Gamma"],
 }
 
 if ENABLE_KEYCLOAK_OAUTH:
