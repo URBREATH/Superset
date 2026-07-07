@@ -65,6 +65,7 @@ services:
       - MAPBOX_API_KEY=${MAPBOX_API_KEY}
       - PYTHONPATH=/app/pythonpath
       - MAX_DASHBOARD_SIZE=10485760
+      - SUPERSET_DASHBOARD_POSITION_DATA_LIMIT=10000000
     volumes:
       - superset_home_v6:/app/superset_home
     networks:
