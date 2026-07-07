@@ -122,16 +122,15 @@ AUTH_ROLES_MAPPING = {
     "superset_admin": ["Admin"],
     "superset_alpha": ["Alpha"],
     "superset_gamma": ["Gamma"],
-    # City viewers get read-only dashboard access.
-    "Leuven_Viewer": ["Public"],
-    "Tallinn_Viewer": ["Public"],
-    "ClujNapoca_Viewer": ["Public"],
-    "Madrid_Viewer": ["Public"],
-    # City editors can edit their own dashboard, but should not manage data sources.
-    "Leuven_Editor": ["Gamma"],
-    "Tallinn_Editor": ["Gamma"],
-    "ClujNapoca_Editor": ["Gamma"],
-    "Madrid_Editor": ["Gamma"],
+    # City roles are mapped 1:1 from Keycloak to Superset.
+    "Leuven_Viewer": ["Leuven_Viewer"],
+    "Leuven_Editor": ["Leuven_Editor"],
+    "Tallinn_Viewer": ["Tallinn_Viewer"],
+    "Tallinn_Editor": ["Tallinn_Editor"],
+    "ClujNapoca_Viewer": ["ClujNapoca_Viewer"],
+    "ClujNapoca_Editor": ["ClujNapoca_Editor"],
+    "Madrid_Viewer": ["Madrid_Viewer"],
+    "Madrid_Editor": ["Madrid_Editor"],
 }
 
 if ENABLE_KEYCLOAK_OAUTH:
