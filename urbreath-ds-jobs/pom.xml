@@ -144,9 +144,16 @@
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
 				<configuration>
-					<mainClass> eu.urbreathdsjobs.launcher.App </mainClass>
+					<mainClass>eu.urbreathdsjobs.launcher.App</mainClass>
 					<jvmArguments>-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005</jvmArguments>
 				</configuration>
+				<executions>
+					<execution>
+						<goals>
+							<goal>repackage</goal>
+						</goals>
+					</execution>
+				</executions>
 			</plugin> <!--
 			Compiler Java 21 -->
 			<plugin>

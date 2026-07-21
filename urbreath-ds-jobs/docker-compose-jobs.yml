@@ -27,7 +27,7 @@ services:
       - jobs_logs:/app/logs
 
     ports:
-      - "${BACKOFFICE_PORT:-18080}:8080"
+      - "${BACKOFFICE_PORT:-18180}:8080"
     # Per debug remoto JDWP aggiungere anche:
     # - "5005:5005"
 
@@ -42,4 +42,3 @@ volumes:
 # networks:
 #   urbreath_net:
 #     external: true
-
