@@ -13,6 +13,9 @@ services:
       # ?? Jasypt: OBBLIGATORIA per decriptare le credenziali ENC(...) ???????
       - JASYPT_PASSWORD=${JASYPT_PASSWORD}
       - BACKOFFICE_TOKEN=${BACKOFFICE_TOKEN}
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://${APP_DB_HOST}:${APP_DB_PORT}/${APP_DB_NAME}?reWriteBatchedInserts=true
+      - SPRING_DATASOURCE_USERNAME=${APP_DB_USER}
+      - SPRING_DATASOURCE_PASSWORD=${APP_DB_PASSWORD}
 
       # Schedulazioni gestite da application.yaml + backoffice runtime.
       # Nessun override cron/enabled da env per evitare configurazioni duplicate.
@@ -31,14 +34,12 @@ services:
     # Per debug remoto JDWP aggiungere anche:
     # - "5005:5005"
 
-    # Collegare alla rete Docker dell'infrastruttura se necessario:
-    # networks:
-    #   - urbreath_net
+    networks:
+      - superset_net_v6
 
 volumes:
   jobs_logs:
 
-# Rete esterna (decommentare se l'app deve comunicare con altri container)
-# networks:
-#   urbreath_net:
-#     external: true
+networks:
+  superset_net_v6:
+    external: true
