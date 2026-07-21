@@ -1,6 +1,6 @@
 spring:
   datasource:
-    url: jdbc:postgresql://188.34.141.13:57708/urbreath_dev?reWriteBatchedInserts=true
+    url: jdbc:postgresql://188.34.141.13:17708/urbreath_dev?reWriteBatchedInserts=true
     username: ENC(a7i6s+RMohdZwr8FP6x+JHgbEDlwg/+m/NSvWDmKhBOHhKpjH9V+lTNHqS1HRjuc)
     password: ENC(1CyCGXbJC1qVCSWJAN++dQiaunx7SKzmr+QU+R2VzGJqcgvNCjrIRSNt0EpHlvuR)
     hikari:

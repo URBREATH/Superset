@@ -49,23 +49,23 @@ public class BackofficeApiController {
     }
 
     @PostMapping("/jobs/{jobId}/run")
-    public JobControlService.ActionResult run(@PathVariable String jobId) throws Exception {
+    public JobControlService.ActionResult run(@PathVariable("jobId") String jobId) throws Exception {
         return jobControlService.runNow(parseKey(jobId));
     }
 
     @PostMapping("/jobs/{jobId}/stop")
-    public JobControlService.ActionResult stop(@PathVariable String jobId) throws Exception {
+    public JobControlService.ActionResult stop(@PathVariable("jobId") String jobId) throws Exception {
         return jobControlService.stopRunning(parseKey(jobId));
     }
 
     @PostMapping("/jobs/{jobId}/restart")
-    public JobControlService.ActionResult restart(@PathVariable String jobId) throws Exception {
+    public JobControlService.ActionResult restart(@PathVariable("jobId") String jobId) throws Exception {
         return jobControlService.restartLastFailedOrStopped(parseKey(jobId));
     }
 
     @PostMapping("/jobs/{jobId}/schedule")
     public Map<String, Object> updateSchedule(
-            @PathVariable String jobId,
+            @PathVariable("jobId") String jobId,
             @RequestBody ScheduleUpdateRequest request
     ) {
         JobKey key = parseKey(jobId);
@@ -83,7 +83,7 @@ public class BackofficeApiController {
 
     @PostMapping("/jobs/{jobId}/queue/reset-stuck")
     public Map<String, Object> resetStuckQueue(
-            @PathVariable String jobId,
+            @PathVariable("jobId") String jobId,
             @RequestParam(name = "minutes", defaultValue = "60") int minutes
     ) {
         JobKey key = parseKey(jobId);
@@ -108,5 +108,4 @@ public class BackofficeApiController {
     public record ScheduleUpdateRequest(Boolean enabled, String cron) {
     }
 }
-
 

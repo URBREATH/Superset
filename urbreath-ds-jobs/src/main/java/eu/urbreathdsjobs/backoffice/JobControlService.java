@@ -8,6 +8,7 @@ import org.springframework.batch.core.JobParameters;
 import org.springframework.batch.core.JobParametersBuilder;
 import org.springframework.batch.core.explore.JobExplorer;
 import org.springframework.batch.core.launch.JobLauncher;
+import org.springframework.batch.core.launch.JobExecutionNotRunningException;
 import org.springframework.batch.core.launch.JobOperator;
 import org.springframework.stereotype.Service;
 
@@ -64,13 +65,27 @@ public class JobControlService {
         }
 
         int stopped = 0;
+        int alreadyStopping = 0;
         for (JobExecution execution : running) {
-            if (jobOperator.stop(execution.getId())) {
-                stopped++;
+            try {
+                if (jobOperator.stop(execution.getId())) {
+                    stopped++;
+                }
+            } catch (JobExecutionNotRunningException ex) {
+                alreadyStopping++;
             }
         }
 
-        return new ActionResult(stopped > 0, "Stop richiesto per " + stopped + " esecuzione(i)");
+        if (stopped > 0 && alreadyStopping > 0) {
+            return new ActionResult(true, "Stop richiesto per " + stopped + " esecuzione(i); " + alreadyStopping + " gia in arresto");
+        }
+        if (stopped > 0) {
+            return new ActionResult(true, "Stop richiesto per " + stopped + " esecuzione(i)");
+        }
+        if (alreadyStopping > 0) {
+            return new ActionResult(true, "Le esecuzioni risultano gia in arresto (STOPPING): " + alreadyStopping);
+        }
+        return new ActionResult(false, "Nessuna esecuzione stoppabile trovata");
     }
 
     public ActionResult restartLastFailedOrStopped(JobKey key) throws Exception {
@@ -97,4 +112,3 @@ public class JobControlService {
     public record ActionResult(boolean success, String message) {
     }
 }
-
