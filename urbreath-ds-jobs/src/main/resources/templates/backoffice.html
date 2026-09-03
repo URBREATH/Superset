@@ -171,6 +171,21 @@
       font-family: Consolas, monospace;
       font-size: 13px;
     }
+    .output-toolbar {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+    .output-toolbar select, .output-toolbar label {
+      font-size: 13px;
+      color: var(--muted);
+    }
+    .output-line-info { color: #cbd5e1; }
+    .output-line-warn { color: #fcd34d; }
+    .output-line-error { color: #fca5a5; }
+    .output-line-meta { color: #93c5fd; }
     .danger-text { color: var(--danger); font-weight: 700; }
     .success-text { color: var(--success); font-weight: 700; }
     @media (max-width: 1200px) {
@@ -188,9 +203,15 @@
       <label for="token">Token</label>
       <div class="token-wrap">
         <input id="token" class="token-input" type="password" placeholder="Inserisci token backoffice" />
-        <button id="toggleTokenBtn" class="btn-neutral" onclick="toggleTokenVisibility()" type="button">Mostra</button>
+        <button id="toggleTokenBtn" class="btn-neutral" onclick="toggleTokenVisibility()" type="button"
+                title="Mostra o nasconde il token di autenticazione nel campo di input. Non invia richieste al server.">
+          Mostra
+        </button>
       </div>
-      <button class="btn-primary" onclick="refreshAll()">Aggiorna</button>
+      <button class="btn-primary" onclick="refreshAll()"
+              title="Ricarica tutti i dati del backoffice: stato job, variabili scheduler e statistiche osservabilità.">
+        Aggiorna
+      </button>
     </div>
     <div id="statusBanner" class="status-banner"></div>
 
@@ -227,23 +248,64 @@
   </div>
 
   <div class="panel">
-  <h3 style="margin-top:0">Variabili scheduler runtime</h3>
-  <div class="table-wrap">
-  <table id="varsTable">
-    <thead><tr><th>Chiave</th><th>Valore</th></tr></thead>
-    <tbody></tbody>
-  </table>
-  </div>
+  <details>
+    <summary><strong>Storico esecuzioni / osservabilità</strong> (espandi/comprimi)</summary>
+    <div style="margin-top:12px">
+      <div class="toolbar">
+        <label for="obsFromDate">Da</label>
+        <input id="obsFromDate" type="date" required onchange="refreshObservability()"
+               title="Data inizio intervallo osservabilità (inclusa)." />
+        <label for="obsToDate">A</label>
+        <input id="obsToDate" type="date" required onchange="refreshObservability()"
+               title="Data fine intervallo osservabilità (inclusa)." />
+        <button class="btn-neutral" onclick="forceCompleteAll()"
+                title="Forza a COMPLETED tutte le execution bloccate in STARTING/STARTED/STOPPING per tutti i job. Usa con cautela: chiude run ancora marcate attive nel metadata batch.">
+          Force-complete stuck (tutti i job)
+        </button>
+      </div>
+      <div class="note" style="margin-top:8px">
+        <strong>Force-complete stuck</strong>: forza a <strong>COMPLETED</strong> le execution batch bloccate in <strong>STARTING/STARTED/STOPPING</strong>.<br/>
+        <strong>Reset stuck queue</strong>: rimette in coda i task bloccati in import queue (status in-progress) più vecchi di N minuti.
+      </div>
+      <div class="table-wrap">
+        <table id="obsSummaryTable">
+          <thead>
+          <tr>
+            <th>Job</th><th>Chiamate</th><th>Positive</th><th>Negative</th><th>Con insert</th><th>Senza insert</th><th>Record inseriti</th><th>Prima/Ultima chiamata</th><th>Azione</th>
+          </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </details>
   </div>
 
   <div class="panel">
   <h3 style="margin-top:0">Output</h3>
+  <div class="output-toolbar">
+    <label for="logLevelFilter">Livello</label>
+    <select id="logLevelFilter" onchange="renderLogs()">
+      <option value="ALL">Tutti</option>
+      <option value="ERROR">ERROR</option>
+      <option value="WARN">WARN + ERROR</option>
+      <option value="INFO">INFO + WARN + ERROR</option>
+    </select>
+    <label style="display:inline-flex;align-items:center;gap:6px;">
+      <input id="logRelevantOnly" type="checkbox" checked onchange="renderLogs()" />
+      Solo eventi rilevanti
+    </label>
+    <button class="btn-neutral" onclick="clearLogs()" title="Svuota il journal eventi visualizzato.">Pulisci output</button>
+  </div>
   <div class="log" id="log"></div>
   </div>
   </div>
 
   <script>
     let refreshInProgress = false;
+    let previousJobsState = null;
+    let refreshFailures = 0;
+    let logEntries = [];
 
     function token() {
       return document.getElementById('token').value.trim();
@@ -289,9 +351,133 @@
       return String(dateValue);
     }
 
-    function log(msg) {
-      const el = document.getElementById('log');
-      el.textContent = '[' + new Date().toLocaleTimeString() + '] ' + msg + '\n' + el.textContent;
+    function formatLocalDate(date) {
+      const y = date.getFullYear();
+      const m = String(date.getMonth() + 1).padStart(2, '0');
+      const d = String(date.getDate()).padStart(2, '0');
+      return `${y}-${m}-${d}`;
+    }
+
+    function validateObservabilityRange(showBannerOnError = true) {
+      const fromDate = document.getElementById('obsFromDate').value;
+      const toDate = document.getElementById('obsToDate').value;
+      if (!fromDate || !toDate) {
+        if (showBannerOnError) {
+          setBanner("Intervallo date non valido: entrambi i campi 'Da' e 'A' sono obbligatori.", true);
+        }
+        return false;
+      }
+      if (toDate < fromDate) {
+        if (showBannerOnError) {
+          setBanner("Intervallo date non valido: la data 'A' deve essere maggiore o uguale alla data 'Da'.", true);
+        }
+        return false;
+      }
+      return true;
+    }
+
+    function clearLogs() {
+      logEntries = [];
+      renderLogs();
+    }
+
+    function levelRank(level) {
+      if (level === 'ERROR') return 3;
+      if (level === 'WARN') return 2;
+      return 1;
+    }
+
+    function shouldShowLevel(entryLevel, selected) {
+      if (selected === 'ALL') return true;
+      if (selected === 'ERROR') return entryLevel === 'ERROR';
+      if (selected === 'WARN') return levelRank(entryLevel) >= 2;
+      return levelRank(entryLevel) >= 1;
+    }
+
+    function renderLogs() {
+      const level = document.getElementById('logLevelFilter')?.value || 'ALL';
+      const relevantOnly = !!document.getElementById('logRelevantOnly')?.checked;
+      const lines = logEntries
+        .filter(e => shouldShowLevel(e.level, level))
+        .filter(e => !relevantOnly || e.relevant)
+        .slice(0, 300)
+        .map(e => {
+          const repeat = e.count > 1 ? ` (x${e.count})` : '';
+          const cls = e.level === 'ERROR' ? 'output-line-error'
+            : e.level === 'WARN' ? 'output-line-warn'
+            : e.level === 'META' ? 'output-line-meta'
+            : 'output-line-info';
+          return `<div class="${cls}">[${e.time}] [${e.level}] ${e.message}${repeat}</div>`;
+        });
+      document.getElementById('log').innerHTML = lines.join('') || '<div class="output-line-meta">Nessun evento da mostrare.</div>';
+    }
+
+    function logEvent(level, message, options = {}) {
+      const entry = {
+        time: new Date().toLocaleTimeString(),
+        level: level || 'INFO',
+        message: message || '',
+        relevant: options.relevant !== false,
+        dedupeKey: options.dedupeKey || `${level}|${message}`,
+        count: 1
+      };
+      const first = logEntries[0];
+      if (first && first.dedupeKey === entry.dedupeKey && first.level === entry.level) {
+        first.count += 1;
+        first.time = entry.time;
+      } else {
+        logEntries.unshift(entry);
+        if (logEntries.length > 800) {
+          logEntries = logEntries.slice(0, 800);
+        }
+      }
+      renderLogs();
+    }
+
+    function normalizeJobsState(jobs) {
+      return (jobs || []).reduce((acc, j) => {
+        acc[j.id] = {
+          running: !!j.running,
+          runningIds: (j.runningExecutionIds || []).join(','),
+          lastStatus: j.lastStatus || '',
+          lastError: j.lastError || ''
+        };
+        return acc;
+      }, {});
+    }
+
+    function compareJobStates(previousState, currentState) {
+      const events = [];
+      Object.keys(currentState).forEach(jobId => {
+        const prev = previousState[jobId];
+        const curr = currentState[jobId];
+        if (!prev) return;
+        if (prev.running !== curr.running) {
+          events.push({
+            level: curr.running ? 'WARN' : 'INFO',
+            message: `${jobId}: ${prev.running ? 'RUNNING' : 'IDLE'} -> ${curr.running ? 'RUNNING' : 'IDLE'}`
+          });
+        }
+        if (prev.lastStatus !== curr.lastStatus) {
+          events.push({
+            level: curr.lastStatus === 'FAILED' ? 'ERROR' : 'INFO',
+            message: `${jobId}: ultimo stato ${prev.lastStatus || '-'} -> ${curr.lastStatus || '-'}`
+          });
+        }
+        if (prev.runningIds !== curr.runningIds && curr.runningIds) {
+          events.push({
+            level: 'META',
+            message: `${jobId}: runningExecutionIds=${curr.runningIds}`
+          });
+        }
+        if (curr.lastError && curr.lastError !== prev.lastError) {
+          events.push({
+            level: 'ERROR',
+            message: `${jobId}: nuovo errore: ${curr.lastError}`
+          });
+        }
+      });
+      return events;
     }
 
     async function api(path, options) {
@@ -346,6 +532,16 @@
       const tbody = document.querySelector('#jobsTable tbody');
       tbody.innerHTML = '';
       updateSummary(jobs);
+      const currentState = normalizeJobsState(jobs);
+
+      if (previousJobsState === null) {
+        previousJobsState = currentState;
+        logEvent('META', `Stato iniziale caricato: ${jobs.length} job`, { dedupeKey: 'jobs-initial' });
+      } else {
+        const changes = compareJobStates(previousJobsState, currentState);
+        changes.forEach(ev => logEvent(ev.level, ev.message, { dedupeKey: `delta|${ev.message}` }));
+        previousJobsState = currentState;
+      }
 
       jobs.forEach(job => {
         const tr = document.createElement('tr');
@@ -358,13 +554,20 @@
               ${badge(job.enabled, 'ENABLED', 'DISABLED')}
               <div class="subtle">Blocca/consente solo i trigger futuri</div>
               <div style="margin-top:8px">
-                <button class="${job.enabled ? 'btn-warning' : 'btn-success'}" onclick="toggleEnabled('${job.id}', ${!job.enabled})">${job.enabled ? 'Disabilita' : 'Abilita'}</button>
+                <button class="${job.enabled ? 'btn-warning' : 'btn-success'}"
+                        onclick="toggleEnabled('${job.id}', ${!job.enabled})"
+                        title="${job.enabled
+                          ? 'Disabilita solo i trigger automatici futuri. Le execution già in corso non vengono fermate.'
+                          : 'Abilita i trigger automatici futuri secondo la cron configurata. Non avvia immediatamente il job.'}">
+                  ${job.enabled ? 'Disabilita' : 'Abilita'}
+                </button>
               </div>
           </td>
           <td>
             <div class="stack">
               <input class="cron-input" id="cron-${job.id}" value="${job.cron}" />
-              <div><button class="btn-primary" onclick="updateCron('${job.id}')">Salva cron</button></div>
+              <div><button class="btn-primary" onclick="updateCron('${job.id}')"
+                           title="Salva la nuova espressione cron runtime per il job. La modifica vale subito, ma per persisterla al riavvio va allineata anche nella configurazione ambiente/yaml.">Salva cron</button></div>
             </div>
           </td>
           <td>
@@ -379,39 +582,71 @@
           <td><div class="mono">${job.lastError || '-'}</div></td>
           <td>
             <div class="row-actions">
-              <button class="btn-primary" onclick="runNow('${job.id}')">Run now</button>
-              <button class="btn-danger" onclick="stopNow('${job.id}')">Stop</button>
-              <button class="btn-warning" onclick="restartNow('${job.id}')">Restart last failed</button>
-              <button class="btn-neutral" onclick="resetStuck('${job.id}')">Reset stuck queue</button>
+              <button class="btn-primary" onclick="runNow('${job.id}')"
+                      title="Avvia subito una nuova execution manuale del job, se non è già in esecuzione.">Run now</button>
+              <button class="btn-danger" onclick="stopNow('${job.id}')"
+                      title="Richiede lo stop delle execution attualmente running del job tramite JobOperator.stop(). Se non ci sono run attive, non cambia nulla.">Stop</button>
+              <button class="btn-warning" onclick="restartNow('${job.id}')"
+                      title="Rilancia l'ultima execution FAILED o STOPPED del job (restart Spring Batch), riusando lo stato necessario al resume dove supportato.">Restart last failed</button>
+              <button class="btn-neutral" onclick="resetStuck('${job.id}')"
+                      title="Rimette in coda i task bloccati in stato in-progress nella task queue del job, più vecchi della soglia minuti indicata. Non modifica direttamente le execution batch.">Reset stuck queue</button>
             </div>
           </td>
         `;
         tbody.appendChild(tr);
       });
+      return jobs;
     }
 
-    async function refreshVars() {
-      const vars = await api('/backoffice/api/variables');
-      const tbody = document.querySelector('#varsTable tbody');
-      tbody.innerHTML = '';
+    async function refreshObservability() {
+      if (!validateObservabilityRange(true)) {
+        return;
+      }
+      const fromDate = document.getElementById('obsFromDate').value;
+      const toDate = document.getElementById('obsToDate').value;
+      const data = await api('/backoffice/api/jobs/observability?fromDate=' + encodeURIComponent(fromDate) + '&toDate=' + encodeURIComponent(toDate) + '&includeExecutions=false');
 
-      vars.forEach(v => {
+      const summaryBody = document.querySelector('#obsSummaryTable tbody');
+      summaryBody.innerHTML = '';
+      (data.summaries || []).forEach(s => {
         const tr = document.createElement('tr');
-        tr.innerHTML = `<td>${v.key}</td><td>${v.value}</td>`;
-        tbody.appendChild(tr);
+        tr.innerHTML = `
+          <td class="mono">${s.jobId || s.jobName}</td>
+          <td>${s.calls}</td>
+          <td class="success-text">${s.positives}</td>
+          <td class="danger-text">${s.negatives}</td>
+          <td>${s.withInserts}</td>
+          <td>${s.withoutInserts}</td>
+          <td>${s.totalInserted}</td>
+          <td>${toLocal(s.firstCalledAt)}<div class="subtle">→ ${toLocal(s.lastCalledAt)}</div></td>
+          <td><button class="btn-warning" onclick="forceCompleteJob('${s.jobId}')"
+                      title="Forza a COMPLETED le execution bloccate del job selezionato (stati STARTING/STARTED/STOPPING), aggiornando metadata di job e step.">Force-complete stuck</button></td>
+        `;
+        summaryBody.appendChild(tr);
       });
+      return data;
     }
 
     async function refreshAll() {
       if (refreshInProgress) {
         return;
       }
+      if (!validateObservabilityRange(true)) {
+        return;
+      }
       refreshInProgress = true;
+      const startedAt = performance.now();
       try {
-        await Promise.all([refreshJobs(), refreshVars()]);
+        const [jobs, obs] = await Promise.all([refreshJobs(), refreshObservability()]);
+        const elapsed = Math.round(performance.now() - startedAt);
+        refreshFailures = 0;
         setBanner('Token valido. Dati aggiornati.', false);
-        log('Aggiornamento completato');
+        logEvent('META', `Refresh ok in ${elapsed}ms | running=${(jobs || []).filter(j => j.running).length} | riepiloghi=${(obs?.summaries || []).length}`, {
+          relevant: false,
+          dedupeKey: 'refresh-ok'
+        });
       } catch (e) {
+        refreshFailures += 1;
         if ((e.message || '').includes('HTTP 401')) {
           setBanner('Token non valido (401). Verifica il valore nel campo Token.', true);
         } else if ((e.message || '').includes('HTTP 503')) {
@@ -419,7 +654,7 @@
         } else {
           setBanner('Errore durante il refresh: ' + e.message, true);
         }
-        log('Errore refresh: ' + e.message);
+        logEvent('ERROR', `Refresh fallito (#${refreshFailures}): ${e.message}`, { dedupeKey: `refresh-error|${e.message}` });
       } finally {
         refreshInProgress = false;
       }
@@ -428,30 +663,30 @@
     async function runNow(jobId) {
       try {
         const res = await api('/backoffice/api/jobs/' + jobId + '/run', { method: 'POST' });
-        log(jobId + ' run: ' + res.message);
+        logEvent('INFO', `${jobId} run: ${res.message}`);
         await refreshAll();
       } catch (e) {
-        log('Errore run ' + jobId + ': ' + e.message);
+        logEvent('ERROR', `Errore run ${jobId}: ${e.message}`);
       }
     }
 
     async function stopNow(jobId) {
       try {
         const res = await api('/backoffice/api/jobs/' + jobId + '/stop', { method: 'POST' });
-        log(jobId + ' stop: ' + res.message);
+        logEvent('INFO', `${jobId} stop: ${res.message}`);
         await refreshAll();
       } catch (e) {
-        log('Errore stop ' + jobId + ': ' + e.message);
+        logEvent('ERROR', `Errore stop ${jobId}: ${e.message}`);
       }
     }
 
     async function restartNow(jobId) {
       try {
         const res = await api('/backoffice/api/jobs/' + jobId + '/restart', { method: 'POST' });
-        log(jobId + ' restart: ' + res.message);
+        logEvent('INFO', `${jobId} restart: ${res.message}`);
         await refreshAll();
       } catch (e) {
-        log('Errore restart ' + jobId + ': ' + e.message);
+        logEvent('ERROR', `Errore restart ${jobId}: ${e.message}`);
       }
     }
 
@@ -460,10 +695,10 @@
         const minutes = prompt('Reset task in-progress piu vecchie di quanti minuti?', '60');
         if (!minutes) return;
         const res = await api('/backoffice/api/jobs/' + jobId + '/queue/reset-stuck?minutes=' + encodeURIComponent(minutes), { method: 'POST' });
-        log(jobId + ' reset queue: ' + res.resetRows + ' task reset');
+        logEvent('WARN', `${jobId} reset queue: ${res.resetRows} task reset (soglia ${minutes} min)`);
         await refreshAll();
       } catch (e) {
-        log('Errore reset queue ' + jobId + ': ' + e.message);
+        logEvent('ERROR', `Errore reset queue ${jobId}: ${e.message}`);
       }
     }
 
@@ -473,10 +708,30 @@
           method: 'POST',
           body: JSON.stringify({ enabled: enabled })
         });
-        log(jobId + ' schedule: ' + res.message);
+        logEvent('INFO', `${jobId} schedule: ${res.message}`);
         await refreshAll();
       } catch (e) {
-        log('Errore enabled ' + jobId + ': ' + e.message);
+        logEvent('ERROR', `Errore enabled ${jobId}: ${e.message}`);
+      }
+    }
+
+    async function forceCompleteJob(jobId) {
+      try {
+        const res = await api('/backoffice/api/jobs/' + jobId + '/force-complete-stuck', { method: 'POST' });
+        logEvent('WARN', `${jobId} force-complete: job=${res.jobExecutionRows}, step=${res.stepExecutionRows}`);
+        await refreshAll();
+      } catch (e) {
+        logEvent('ERROR', `Errore force-complete ${jobId}: ${e.message}`);
+      }
+    }
+
+    async function forceCompleteAll() {
+      try {
+        const res = await api('/backoffice/api/jobs/force-complete-stuck', { method: 'POST' });
+        logEvent('WARN', `force-complete globale: job=${res.jobExecutionRows}, step=${res.stepExecutionRows}`);
+        await refreshAll();
+      } catch (e) {
+        logEvent('ERROR', `Errore force-complete globale: ${e.message}`);
       }
     }
 
@@ -487,17 +742,25 @@
           method: 'POST',
           body: JSON.stringify({ cron: cron })
         });
-        log(jobId + ' cron: ' + res.message);
+        logEvent('INFO', `${jobId} cron: ${res.message}`);
         await refreshAll();
       } catch (e) {
-        log('Errore cron ' + jobId + ': ' + e.message);
+        logEvent('ERROR', `Errore cron ${jobId}: ${e.message}`);
       }
     }
+
+    (function initObservabilityDates() {
+      const to = new Date();
+      const from = new Date();
+      from.setDate(to.getDate() - 1);
+      const toIso = formatLocalDate(to);
+      const fromIso = formatLocalDate(from);
+      document.getElementById('obsFromDate').value = fromIso;
+      document.getElementById('obsToDate').value = toIso;
+    })();
 
     refreshAll();
     setInterval(refreshAll, 8000);
   </script>
 </body>
 </html>
-
-

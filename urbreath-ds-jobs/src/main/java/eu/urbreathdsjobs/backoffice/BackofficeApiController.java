@@ -48,6 +48,19 @@ public class BackofficeApiController {
         return jobMonitorService.schedulerVariables();
     }
 
+    @GetMapping("/jobs/observability")
+    public JobMonitorService.JobObservabilityResponse observability(
+            @RequestParam(name = "fromDate") String fromDate,
+            @RequestParam(name = "toDate") String toDate,
+            @RequestParam(name = "includeExecutions", defaultValue = "false") boolean includeExecutions
+    ) {
+        try {
+            return jobMonitorService.observability(fromDate, toDate, includeExecutions);
+        } catch (IllegalArgumentException ex) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, ex.getMessage());
+        }
+    }
+
     @PostMapping("/jobs/{jobId}/run")
     public JobControlService.ActionResult run(@PathVariable("jobId") String jobId) throws Exception {
         return jobControlService.runNow(parseKey(jobId));
@@ -100,6 +113,16 @@ public class BackofficeApiController {
         );
     }
 
+    @PostMapping("/jobs/{jobId}/force-complete-stuck")
+    public JobControlService.ForceCompleteResult forceCompleteStuck(@PathVariable("jobId") String jobId) {
+        return jobControlService.forceCompleteStuck(parseKey(jobId));
+    }
+
+    @PostMapping("/jobs/force-complete-stuck")
+    public JobControlService.ForceCompleteResult forceCompleteStuckAll() {
+        return jobControlService.forceCompleteStuckAll();
+    }
+
     private JobKey parseKey(String jobId) {
         return JobKey.fromPath(jobId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Job non valido: " + jobId));
@@ -108,4 +131,3 @@ public class BackofficeApiController {
     public record ScheduleUpdateRequest(Boolean enabled, String cron) {
     }
 }
-

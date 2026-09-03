@@ -10,8 +10,11 @@ import org.springframework.batch.core.explore.JobExplorer;
 import org.springframework.batch.core.launch.JobLauncher;
 import org.springframework.batch.core.launch.JobExecutionNotRunningException;
 import org.springframework.batch.core.launch.JobOperator;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 
+import java.sql.Timestamp;
+import java.time.LocalDateTime;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -25,17 +28,20 @@ public class JobControlService {
     private final JobExplorer jobExplorer;
     private final JobOperator jobOperator;
     private final Map<String, Job> jobsByBeanName;
+    private final JdbcTemplate jdbcTemplate;
 
     public JobControlService(
             JobLauncher jobLauncher,
             JobExplorer jobExplorer,
             JobOperator jobOperator,
-            Map<String, Job> jobsByBeanName
+            Map<String, Job> jobsByBeanName,
+            JdbcTemplate jdbcTemplate
     ) {
         this.jobLauncher = jobLauncher;
         this.jobExplorer = jobExplorer;
         this.jobOperator = jobOperator;
         this.jobsByBeanName = jobsByBeanName;
+        this.jdbcTemplate = jdbcTemplate;
     }
 
     public ActionResult runNow(JobKey key) throws Exception {
@@ -109,6 +115,81 @@ public class JobControlService {
                 .findFirst();
     }
 
+    public ForceCompleteResult forceCompleteStuck(JobKey key) {
+        return forceCompleteStuckInternal(key != null ? key.getJobName() : null);
+    }
+
+    public ForceCompleteResult forceCompleteStuckAll() {
+        return forceCompleteStuckInternal(null);
+    }
+
+    private ForceCompleteResult forceCompleteStuckInternal(String jobName) {
+        LocalDateTime now = LocalDateTime.now();
+        Timestamp nowTs = Timestamp.valueOf(now);
+        String message = "Force complete da backoffice";
+
+        int stepRows;
+        int jobRows;
+        if (jobName == null) {
+            stepRows = jdbcTemplate.update("""
+                    UPDATE public.batch_step_execution se
+                    SET status = 'COMPLETED',
+                        exit_code = 'COMPLETED',
+                        exit_message = ?,
+                        end_time = COALESCE(end_time, ?),
+                        last_updated = ?
+                    WHERE status IN ('STARTING', 'STARTED', 'STOPPING')
+                    """, message, nowTs, nowTs);
+
+            jobRows = jdbcTemplate.update("""
+                    UPDATE public.batch_job_execution
+                    SET status = 'COMPLETED',
+                        exit_code = 'COMPLETED',
+                        exit_message = ?,
+                        end_time = COALESCE(end_time, ?),
+                        last_updated = ?
+                    WHERE status IN ('STARTING', 'STARTED', 'STOPPING')
+                    """, message, nowTs, nowTs);
+        } else {
+            stepRows = jdbcTemplate.update("""
+                    UPDATE public.batch_step_execution se
+                    SET status = 'COMPLETED',
+                        exit_code = 'COMPLETED',
+                        exit_message = ?,
+                        end_time = COALESCE(end_time, ?),
+                        last_updated = ?
+                    WHERE status IN ('STARTING', 'STARTED', 'STOPPING')
+                      AND se.job_execution_id IN (
+                        SELECT je.job_execution_id
+                        FROM public.batch_job_execution je
+                        JOIN public.batch_job_instance ji ON ji.job_instance_id = je.job_instance_id
+                        WHERE ji.job_name = ?
+                          AND je.status IN ('STARTING', 'STARTED', 'STOPPING')
+                    )
+                    """, message, nowTs, nowTs, jobName);
+
+            jobRows = jdbcTemplate.update("""
+                    UPDATE public.batch_job_execution je
+                    SET status = 'COMPLETED',
+                        exit_code = 'COMPLETED',
+                        exit_message = ?,
+                        end_time = COALESCE(end_time, ?),
+                        last_updated = ?
+                    WHERE je.status IN ('STARTING', 'STARTED', 'STOPPING')
+                      AND je.job_instance_id IN (
+                        SELECT ji.job_instance_id
+                        FROM public.batch_job_instance ji
+                        WHERE ji.job_name = ?
+                    )
+                    """, message, nowTs, nowTs, jobName);
+        }
+
+        return new ForceCompleteResult(true, "Aggiornamento forzato completato", jobRows, stepRows);
+    }
+
     public record ActionResult(boolean success, String message) {
+    }
+
+    public record ForceCompleteResult(boolean success, String message, int jobExecutionRows, int stepExecutionRows) {
     }
 }
