@@ -80,7 +80,7 @@ services:
       superset fab create-admin --username ${SUPERSET_ADMIN_USERNAME} --firstname ${SUPERSET_ADMIN_FIRSTNAME} --lastname ${SUPERSET_ADMIN_LASTNAME} --email ${SUPERSET_ADMIN_EMAIL} --password ${SUPERSET_ADMIN_PASSWORD} 2>/dev/null || superset fab reset-password --username ${SUPERSET_ADMIN_USERNAME} --password ${SUPERSET_ADMIN_PASSWORD} &&
       superset fab create-user --username ${SUPERSET_GAMMA_USERNAME} --firstname ${SUPERSET_GAMMA_FIRSTNAME} --lastname ${SUPERSET_GAMMA_LASTNAME} --email ${SUPERSET_GAMMA_EMAIL} --password ${SUPERSET_GAMMA_PASSWORD} --role Gamma 2>/dev/null || superset fab reset-password --username ${SUPERSET_GAMMA_USERNAME} --password ${SUPERSET_GAMMA_PASSWORD} &&
       superset fab create-user --username ${SUPERSET_TECHNICAL_USERNAME} --firstname ${SUPERSET_TECHNICAL_FIRSTNAME} --lastname ${SUPERSET_TECHNICAL_LASTNAME} --email ${SUPERSET_TECHNICAL_EMAIL} --password ${SUPERSET_TECHNICAL_PASSWORD} --role Gamma 2>/dev/null || superset fab reset-password --username ${SUPERSET_TECHNICAL_USERNAME} --password ${SUPERSET_TECHNICAL_PASSWORD} &&
-      superset init && gunicorn --bind 0.0.0.0:8088 --workers 1 --timeout 120 'superset.app:create_app()'"
+      superset init && gunicorn --bind 0.0.0.0:8088 --workers 1 --timeout 600 'superset.app:create_app()'"
     restart: unless-stopped
 
   # ?? Redis ?????????????????????????????????????????????????????????
@@ -124,7 +124,20 @@ services:
 
   # ?? Frontend React Embedded ???????????????????????????????????????
   embeddedsuperset_v6:
-    build: ./urbreath-ds-embedded
+    build:
+      context: ./urbreath-ds-embedded
+      args:
+        REACT_APP_SUPERSET_URL: ${REACT_APP_SUPERSET_URL}
+        REACT_APP_SUPERSET_TECHNICAL_USERNAME: ${REACT_APP_SUPERSET_TECHNICAL_USERNAME}
+        REACT_APP_SUPERSET_TECHNICAL_PASSWORD: ${REACT_APP_SUPERSET_TECHNICAL_PASSWORD}
+        REACT_APP_DASHBOARD_MADRID: ${REACT_APP_DASHBOARD_MADRID}
+        REACT_APP_DASHBOARD_CLUJ: ${REACT_APP_DASHBOARD_CLUJ}
+        REACT_APP_DASHBOARD_TALLINN: ${REACT_APP_DASHBOARD_TALLINN}
+        REACT_APP_DASHBOARD_LEUVEN: ${REACT_APP_DASHBOARD_LEUVEN}
+        REACT_APP_DASHBOARD_MADRID_LINK: ${REACT_APP_DASHBOARD_MADRID_LINK}
+        REACT_APP_DASHBOARD_CLUJ_LINK: ${REACT_APP_DASHBOARD_CLUJ_LINK}
+        REACT_APP_DASHBOARD_LEUVEN_LINK: ${REACT_APP_DASHBOARD_LEUVEN_LINK}
+        REACT_APP_DASHBOARD_TALLINN_LINK: ${REACT_APP_DASHBOARD_TALLINN_LINK}
     container_name: embeddedsuperset_v6
     environment:
       - REACT_APP_SUPERSET_URL=${REACT_APP_SUPERSET_URL}
