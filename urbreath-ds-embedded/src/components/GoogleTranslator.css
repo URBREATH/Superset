@@ -1,0 +1,17 @@
+.urbreath-google-translate {
+  display: none;
+}
+
+.goog-te-banner-frame,
+iframeiframe[style*="position: fixed"],
+iframe[style*="position:fixed"],
+.goog-te-banner-frame,
+#goog-gt-tt {
+  display: none !important;
+  visibility: hidden !important;
+  height: 0 !important;
+}
+
+body {
+  top: 0 !important;
+}

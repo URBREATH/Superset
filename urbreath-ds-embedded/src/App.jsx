@@ -6,10 +6,12 @@ import DashboardClujNapoca from "./pages/DashboardClujNapoca";
 import DashboardTallinn from "./pages/DashboardTallinn";
 import DashboardLeuven from "./pages/DashboardLeuven";
 import EmbeddedHostDebugBanner from "./components/EmbeddedHostDebugBanner";
+import GoogleTranslator from "./components/GoogleTranslator";
 
 function App() {
   return (
     <>
+      <GoogleTranslator />
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/madrid" element={<DashboardMadrid />} />

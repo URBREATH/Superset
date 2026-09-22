@@ -10,5 +10,7 @@ RUN uv pip install --python /app/.venv/bin/python --no-cache psycopg2-binary aut
 # la config OAuth e il logo non dipendono più da bind mount locali.
 COPY superset_config.py /app/pythonpath/superset_config.py
 COPY assets/superset-logo-horiz.png /app/superset/static/assets/images/superset-logo-horiz.png
+COPY assets/embedded-google-translator.js /app/superset/static/assets/embedded-google-translator.js
+COPY templates/head_custom_extra.html /app/superset/templates/head_custom_extra.html
 
 USER superset

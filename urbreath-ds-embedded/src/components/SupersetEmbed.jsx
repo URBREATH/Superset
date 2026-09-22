@@ -1,13 +1,18 @@
 import React, { useEffect, useRef } from "react";
 import axios from "axios";
 import { embedDashboard } from "@superset-ui/embedded-sdk";
+import { useEmbeddedHostConfig } from "../context/EmbeddedHostContext";
+import { normalizeLanguage } from "../utils/language";
 
 function SupersetEmbed({ dashboardId }) {
   const containerRef = useRef(null);
+  const { language } = useEmbeddedHostConfig();
+  const selectedLanguage = normalizeLanguage(language);
 
   useEffect(() => {
     if (!dashboardId || dashboardId.startsWith("PLACEHOLDER")) return;
 
+    let cancelled = false;
     const supersetUrl = process.env.REACT_APP_SUPERSET_URL;
     const supersetApiUrl = supersetUrl + "/api/v1/security";
     const technicalUsername = process.env.REACT_APP_SUPERSET_TECHNICAL_USERNAME;
@@ -63,8 +68,14 @@ function SupersetEmbed({ dashboardId }) {
         supersetDomain: supersetUrl,
         mountPoint: containerRef.current,
         fetchGuestToken,
-        dashboardUiConfig: { hideTitle: true, hideChartControls: true },
+        dashboardUiConfig: {
+          hideTitle: true,
+          hideChartControls: true,
+          urlParams: selectedLanguage ? { language: selectedLanguage } : undefined,
+        },
       });
+
+      if (cancelled) return;
 
       // Imposta dimensioni iframe
       const iframe = containerRef.current.querySelector("iframe");
@@ -72,11 +83,29 @@ function SupersetEmbed({ dashboardId }) {
         iframe.style.width = "100%";
         iframe.style.minHeight = "100vh";
         iframe.style.border = "none";
+
+        if (selectedLanguage && iframe.contentWindow) {
+          iframe.contentWindow.postMessage(
+            { language: selectedLanguage },
+            new URL(supersetUrl).origin
+          );
+        }
       }
     }
 
-    loadDashboard().catch(console.error);
-  }, [dashboardId]);
+    loadDashboard().catch((error) => {
+      if (!cancelled) {
+        console.error("[SupersetEmbed] Unable to load dashboard", error);
+      }
+    });
+
+    return () => {
+      cancelled = true;
+      if (containerRef.current) {
+        containerRef.current.replaceChildren();
+      }
+    };
+  }, [dashboardId, selectedLanguage]);
 
   return <div ref={containerRef} id="superset-container"></div>;
 }
