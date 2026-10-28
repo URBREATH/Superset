@@ -283,3 +283,20 @@ USER root
 RUN uv pip install .[duckdb]
 USER superset
 CMD ["/app/docker/entrypoints/docker-ci.sh"]
+
+######################################################################
+# URBreath custom runtime image
+######################################################################
+FROM lean AS urbreath
+
+USER root
+
+RUN --mount=type=cache,target=/root/.cache/uv \
+    uv pip install --python /app/.venv/bin/python --no-cache psycopg2-binary authlib
+
+COPY --from=urbreath-config superset_config.py /app/pythonpath/superset_config.py
+COPY --from=urbreath-config assets/superset-logo-horiz.png /app/superset/static/assets/images/superset-logo-horiz.png
+COPY --from=urbreath-config assets/embedded-google-translator.js /app/superset/static/assets/embedded-google-translator.js
+COPY --from=urbreath-config templates/head_custom_extra.html /app/superset/templates/head_custom_extra.html
+
+USER superset

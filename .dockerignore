@@ -1,0 +1,12 @@
+/urbreath-ds-embedded/node_modules/
+/metadata/
+/backup/
+/.idea/
+
+# Do not send credentials, database dumps, or the imported source tree to
+# the URBreath named build context.
+.env*
+*.sql
+*.xlsx
+/.git/
+/superset-source/

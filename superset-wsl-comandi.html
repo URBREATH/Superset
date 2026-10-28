@@ -1,0 +1,518 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Superset URBreath - Comandi WSL e Docker</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --background: #f5f7fb;
+      --surface: #ffffff;
+      --border: #d9e0ea;
+      --text: #1f2937;
+      --muted: #5b6676;
+      --primary: #185abd;
+      --code: #172033;
+      --code-text: #e6edf7;
+      --warning-background: #fff6d8;
+      --warning-border: #e3b341;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: var(--background);
+      color: var(--text);
+      font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+      line-height: 1.55;
+    }
+
+    main {
+      width: min(1120px, calc(100% - 32px));
+      margin: 32px auto 64px;
+    }
+
+    header,
+    section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 24px 28px;
+      margin-bottom: 20px;
+      box-shadow: 0 4px 16px rgba(31, 41, 55, 0.05);
+    }
+
+    h1,
+    h2,
+    h3 {
+      line-height: 1.25;
+    }
+
+    h1 {
+      margin: 0 0 8px;
+      color: var(--primary);
+      font-size: clamp(1.8rem, 4vw, 2.6rem);
+    }
+
+    h2 {
+      margin: 0 0 16px;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 10px;
+      font-size: 1.45rem;
+    }
+
+    h3 {
+      margin: 24px 0 8px;
+      font-size: 1.1rem;
+    }
+
+    p {
+      margin: 8px 0 14px;
+    }
+
+    .muted {
+      color: var(--muted);
+    }
+
+    .warning {
+      background: var(--warning-background);
+      border: 1px solid var(--warning-border);
+      border-radius: 8px;
+      padding: 12px 16px;
+      margin: 14px 0;
+    }
+
+    pre {
+      overflow-x: auto;
+      margin: 10px 0 16px;
+      padding: 15px 17px;
+      border-radius: 8px;
+      background: var(--code);
+      color: var(--code-text);
+      font: 0.9rem/1.5 Consolas, "Cascadia Code", monospace;
+    }
+
+    code {
+      padding: 2px 5px;
+      border-radius: 4px;
+      background: #edf2f8;
+      font-family: Consolas, "Cascadia Code", monospace;
+      font-size: 0.92em;
+    }
+
+    pre code {
+      padding: 0;
+      background: transparent;
+      font-size: inherit;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 12px 0;
+    }
+
+    th,
+    td {
+      border: 1px solid var(--border);
+      padding: 9px 10px;
+      text-align: left;
+      vertical-align: top;
+    }
+
+    th {
+      background: #eef3fa;
+    }
+
+    ul {
+      margin-top: 8px;
+    }
+
+    .small {
+      font-size: 0.9rem;
+    }
+  </style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>Superset URBreath: comandi WSL e Docker</h1>
+    <p>
+      Riferimento operativo per compilare, avviare, fermare e controllare
+      l'immagine custom di Superset 6.1.0.
+    </p>
+    <p class="muted">
+      Progetto: <code>/mnt/c/Progetti/URBreath/Superset</code><br>
+      Compose: <code>docker-compose-v6.yml</code><br>
+      Variabili locali: <code>.env.v6</code><br>
+      URL locale: <code>http://localhost:17789</code>
+    </p>
+  </header>
+
+  <section>
+    <h2>1. Preparazione del terminale WSL</h2>
+    <p>Aprire WSL e portarsi nella root del progetto:</p>
+    <pre><code>cd /mnt/c/Progetti/URBreath/Superset</code></pre>
+
+    <p>
+      È possibile definire una funzione abbreviata per il Compose. La funzione
+      resta disponibile solo nel terminale WSL corrente.
+    </p>
+    <pre><code>dc() {
+  docker compose --env-file .env.v6 -f docker-compose-v6.yml "$@"
+}</code></pre>
+
+    <p>Verificare Docker e BuildKit:</p>
+    <pre><code>docker --version
+docker compose version
+docker buildx version</code></pre>
+  </section>
+
+  <section>
+    <h2>2. Struttura della build custom</h2>
+    <p>
+      Il servizio <code>superset_v6</code> usa il Dockerfile dei sorgenti
+      Apache e il target finale <code>urbreath</code>.
+    </p>
+    <pre><code>docker compose --env-file .env.v6 -f docker-compose-v6.yml build --pull superset_v6</code></pre>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Elemento</th>
+          <th>Funzione</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>superset-source</code></td>
+          <td>Contesto principale con sorgenti backend, frontend, requirements e Dockerfile Apache.</td>
+        </tr>
+        <tr>
+          <td><code>superset-source/Dockerfile</code></td>
+          <td>Compila frontend, backend e target finale <code>urbreath</code>.</td>
+        </tr>
+        <tr>
+          <td><code>urbreath-config</code></td>
+          <td>Contesto aggiuntivo con configurazione, logo, template e traduttore URBreath.</td>
+        </tr>
+        <tr>
+          <td><code>urbreath-superset:6.1.0-urbreath.1</code></td>
+          <td>Tag dell'immagine finale creata da Docker.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p>
+      La build crea l'immagine ma non ricrea automaticamente il container.
+      Dopo una nuova build occorre eseguire <code>up</code>.
+    </p>
+  </section>
+
+  <section>
+    <h2>3. Creare l'immagine Superset</h2>
+    <h3>Build normale</h3>
+    <pre><code>dc build --pull superset_v6</code></pre>
+
+    <h3>Build usando la cache disponibile</h3>
+    <pre><code>dc build superset_v6</code></pre>
+
+    <h3>Build completamente pulita</h3>
+    <pre><code>dc build --no-cache --pull superset_v6</code></pre>
+
+    <h3>Build e ricreazione del solo servizio Superset</h3>
+    <pre><code>dc up -d --no-deps --build superset_v6</code></pre>
+
+    <h3>Build diretta con Buildx e nuovo tag</h3>
+    <p>
+      Questo comando è utile per creare un tag diverso senza usare il tag
+      definito attualmente nel Compose.
+    </p>
+    <pre><code>docker buildx build \
+  --file superset-source/Dockerfile \
+  --target urbreath \
+  --build-context urbreath-config=. \
+  --tag urbreath-superset:6.1.0-urbreath.2 \
+  --load \
+  superset-source</code></pre>
+    <p class="small muted">
+      L'opzione <code>--load</code> importa l'immagine nel Docker locale.
+    </p>
+  </section>
+
+  <section>
+    <h2>4. Creare una nuova versione dell'immagine</h2>
+    <p>
+      Per creare, ad esempio, la versione
+      <code>6.1.0-urbreath.2</code> usando Compose:
+    </p>
+    <ol>
+      <li>Modificare in <code>docker-compose-v6.yml</code> il valore di <code>image</code>.</li>
+      <li>Verificare la configurazione.</li>
+      <li>Compilare la nuova immagine.</li>
+      <li>Ricreare il container.</li>
+    </ol>
+    <pre><code>dc config --quiet
+dc build --pull superset_v6
+dc up -d --no-deps --no-build superset_v6</code></pre>
+
+    <p>Esempio di riga aggiornata:</p>
+    <pre><code>image: urbreath-superset:6.1.0-urbreath.2</code></pre>
+
+    <p>
+      Il comando <code>restart</code> riavvia il vecchio container e non cambia
+      immagine. Per usare un nuovo tag occorre ricreare il container con
+      <code>up</code>.
+    </p>
+  </section>
+
+  <section>
+    <h2>5. Build degli altri componenti</h2>
+    <h3>Embedded App React</h3>
+    <p>
+      L'Embedded App usa il servizio <code>embeddedsuperset_v6</code> del
+      Compose principale. Il Dockerfile esegue la build React con Node e usa
+      Nginx come runtime.
+    </p>
+    <pre><code>dc build --pull embeddedsuperset_v6</code></pre>
+
+    <p>Ricreare solo il container Embedded App:</p>
+    <pre><code>dc up -d --no-deps --build embeddedsuperset_v6</code></pre>
+
+    <p>Build di tutti i servizi che hanno un Dockerfile nel Compose v6:</p>
+    <pre><code>dc build --pull</code></pre>
+    <p class="small muted">
+      Questo comando compila Superset ed Embedded App. Database e Redis usano
+      immagini predefinite e il componente Jobs usa un Compose separato.
+    </p>
+
+    <h3>URBreath Data Jobs</h3>
+    <p>
+      Jobs è un progetto Spring Boot separato. La build usa Maven e Java 21
+      definiti in <code>urbreath-ds-jobs/Dockerfile</code>.
+    </p>
+    <pre><code>cd /mnt/c/Progetti/URBreath/Superset/urbreath-ds-jobs
+
+dcjobs() {
+  docker compose --env-file .env.jobs -f docker-compose-jobs.yml "$@"
+}
+
+dcjobs config --quiet
+dcjobs build --pull urbreath-ds-jobs</code></pre>
+
+    <p>Avviare il container Jobs:</p>
+    <pre><code>dcjobs up -d --build urbreath-ds-jobs
+dcjobs ps</code></pre>
+
+    <p>Gestire Jobs:</p>
+    <pre><code>dcjobs stop urbreath-ds-jobs
+dcjobs start urbreath-ds-jobs
+dcjobs restart urbreath-ds-jobs
+dcjobs logs -f --tail=100 urbreath-ds-jobs</code></pre>
+
+    <p>
+      Per il funzionamento locale, Jobs utilizza il servizio PostgreSQL
+      <code>otherdb_v6</code>. Se necessario, avviarlo dal progetto principale:
+    </p>
+    <pre><code>cd /mnt/c/Progetti/URBreath/Superset
+dc up -d otherdb_v6</code></pre>
+
+    <p class="small muted">
+      Il file <code>urbreath-ds-jobs/.env.jobs</code> contiene credenziali e
+      segreti: non inserirne i valori in documentazione o nei commit.
+    </p>
+  </section>
+
+  <section>
+    <h2>6. Avviare i servizi</h2>
+    <h3>Avviare database, Redis e Superset</h3>
+    <pre><code>dc up -d db_v6 redis_v6 superset_v6</code></pre>
+
+    <h3>Avviare tutto lo stack</h3>
+    <pre><code>dc up -d</code></pre>
+
+    <h3>Avviare solo l'Embedded App</h3>
+    <pre><code>dc up -d embeddedsuperset_v6</code></pre>
+
+    <h3>Controllare lo stato</h3>
+    <pre><code>dc ps
+dc ps -a</code></pre>
+  </section>
+
+  <section>
+    <h2>7. Fermare e riavviare i servizi</h2>
+    <h3>Fermare solo Superset</h3>
+    <pre><code>dc stop superset_v6</code></pre>
+
+    <h3>Avviare un container fermo</h3>
+    <pre><code>dc start superset_v6</code></pre>
+
+    <h3>Riavviare Superset</h3>
+    <pre><code>dc restart superset_v6</code></pre>
+
+    <h3>Fermare Superset, PostgreSQL e Redis</h3>
+    <pre><code>dc stop superset_v6 db_v6 redis_v6</code></pre>
+
+    <h3>Fermare tutto lo stack senza eliminare i volumi</h3>
+    <pre><code>dc down</code></pre>
+
+    <div class="warning">
+      <strong>Attenzione:</strong> non usare <code>dc down -v</code> durante i
+      test normali. L'opzione <code>-v</code> può eliminare i volumi PostgreSQL
+      e <code>superset_home</code>.
+    </div>
+  </section>
+
+  <section>
+    <h2>8. Log e diagnostica</h2>
+    <h3>Log Superset in tempo reale</h3>
+    <pre><code>dc logs -f superset_v6</code></pre>
+
+    <h3>Ultime 100 righe</h3>
+    <pre><code>dc logs --tail=100 superset_v6</code></pre>
+
+    <h3>Log degli ultimi dieci minuti</h3>
+    <pre><code>dc logs --since=10m superset_v6</code></pre>
+
+    <h3>Health check del container</h3>
+    <pre><code>docker inspect --format '{{.State.Health.Status}}' superset_v6</code></pre>
+
+    <h3>Health endpoint HTTP</h3>
+    <pre><code>curl -sS -o /dev/null -w '%{http_code}\n' \
+  http://localhost:17789/health</code></pre>
+
+    <h3>Utilizzo delle risorse</h3>
+    <pre><code>docker stats superset_v6</code></pre>
+  </section>
+
+  <section>
+    <h2>9. Verificare e ispezionare le immagini</h2>
+    <h3>Elenco delle immagini URBreath</h3>
+    <pre><code>docker image ls urbreath-superset</code></pre>
+
+    <h3>Dettagli di un'immagine</h3>
+    <pre><code>docker image inspect urbreath-superset:6.1.0-urbreath.1</code></pre>
+
+    <h3>Controllare la directory Superset nell'immagine</h3>
+    <pre><code>docker run --rm \
+  --entrypoint /app/.venv/bin/python \
+  urbreath-superset:6.1.0-urbreath.1 \
+  -c "import superset; print(superset.__file__)"</code></pre>
+
+    <h3>Spazio usato da Docker</h3>
+    <pre><code>docker system df</code></pre>
+  </section>
+
+  <section>
+    <h2>10. Entrare nel container ed eseguire comandi Superset</h2>
+    <h3>Aprire una shell</h3>
+    <pre><code>dc exec superset_v6 bash</code></pre>
+
+    <h3>Visualizzare la versione Superset</h3>
+    <pre><code>dc exec superset_v6 superset version</code></pre>
+
+    <h3>Eseguire le migrazioni del database metadati</h3>
+    <pre><code>dc exec superset_v6 superset db upgrade</code></pre>
+
+    <h3>Reinizializzare Superset</h3>
+    <pre><code>dc exec superset_v6 superset init</code></pre>
+
+    <h3>Verificare i moduli custom</h3>
+    <pre><code>dc exec superset_v6 python -c \
+  "import authlib, psycopg2, superset; print('runtime ok')"</code></pre>
+  </section>
+
+  <section>
+    <h2>11. Rete e volumi</h2>
+    <h3>Verificare la rete esterna</h3>
+    <pre><code>docker network inspect superset_net_v6 --format '{{.Name}}'</code></pre>
+
+    <h3>Creare la rete solo se non esiste</h3>
+    <pre><code>docker network inspect superset_net_v6 &gt;/dev/null 2&gt;&amp;1 \
+  || docker network create superset_net_v6</code></pre>
+
+    <h3>Elencare i volumi</h3>
+    <pre><code>docker volume ls</code></pre>
+
+    <h3>Ispezionare un volume</h3>
+    <pre><code>docker volume inspect superset_db_data_v6
+docker volume inspect superset_superset_home_v6</code></pre>
+
+    <p class="small muted">
+      I nomi effettivi dei volumi possono dipendere dal nome del progetto Compose.
+      Usare sempre <code>docker volume ls</code> prima di eseguire operazioni sui volumi.
+    </p>
+  </section>
+
+  <section>
+    <h2>12. Rollback</h2>
+    <p>Elencare i tag disponibili:</p>
+    <pre><code>docker image ls urbreath-superset</code></pre>
+
+    <p>
+      Impostare nel Compose il tag precedente, ad esempio:
+    </p>
+    <pre><code>image: urbreath-superset:6.1.0-urbreath.1</code></pre>
+
+    <p>Ricreare solo Superset:</p>
+    <pre><code>dc up -d --no-deps --no-build superset_v6</code></pre>
+
+    <p>
+      Il rollback dell'immagine non modifica automaticamente il database
+      metadati; per questo è importante mantenere anche i backup.
+    </p>
+  </section>
+
+  <section>
+    <h2>13. Esportare e importare un'immagine</h2>
+    <h3>Esportare l'immagine in un file TAR</h3>
+    <pre><code>docker save \
+  urbreath-superset:6.1.0-urbreath.1 \
+  -o /mnt/c/Progetti/URBreath/Superset/urbreath-superset-6.1.0-urbreath.1.tar</code></pre>
+
+    <h3>Importare l'immagine su un altro Docker Engine</h3>
+    <pre><code>docker load \
+  -i urbreath-superset-6.1.0-urbreath.1.tar</code></pre>
+  </section>
+
+  <section>
+    <h2>14. Comandi da usare con cautela</h2>
+    <p>
+      Questi comandi possono eliminare immagini, cache o volumi e non devono
+      essere usati durante il normale ciclo di sviluppo senza aver verificato
+      cosa verrà rimosso:
+    </p>
+    <pre><code>docker system prune
+docker system prune -a
+docker volume prune
+dc down -v</code></pre>
+    <p>
+      Prima di eventuali pulizie controllare sempre:
+    </p>
+    <pre><code>docker system df
+docker image ls
+docker volume ls
+docker ps -a</code></pre>
+  </section>
+
+  <section>
+    <h2>15. Sequenza consigliata per un normale rilascio locale</h2>
+    <pre><code>cd /mnt/c/Progetti/URBreath/Superset
+
+dc config --quiet
+dc build --pull superset_v6
+dc up -d db_v6 redis_v6 superset_v6
+dc ps
+curl -sS -o /dev/null -w '%{http_code}\n' \
+  http://localhost:17789/health</code></pre>
+    <p>
+      Il risultato atteso dell'ultima riga è <code>200</code>.
+    </p>
+  </section>
+</main>
+</body>
+</html>

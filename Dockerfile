@@ -1,3 +1,5 @@
+# Legacy image definition. docker-compose-v6 uses superset-source/Dockerfile
+# and its urbreath target for source-based builds.
 FROM apache/superset:6.1.0
 USER root
 

@@ -656,6 +656,7 @@ test('should render an extension component if one is supplied', async () => {
   expect(extension[0]).toBeInTheDocument();
 });
 
+
 test('should render the brand text if available', async () => {
   useSelectorMock.mockReturnValue({ roles: [] });
 

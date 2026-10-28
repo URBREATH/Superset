@@ -4,6 +4,8 @@
 networks:
   superset_net_v6:
     external: true
+  # superset_network_dev:
+  #   external: true
 
 services:
 
@@ -19,6 +21,7 @@ services:
       - db_data_v6:/var/lib/postgresql/data
     networks:
       - superset_net_v6
+      # - superset_network_dev
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U superset -d superset"]
       interval: 5s
@@ -26,7 +29,13 @@ services:
       retries: 10
 
   superset_v6:
-    build: .
+    image: urbreath-superset:6.1.0-urbreath.1
+    build:
+      context: ./superset-source
+      dockerfile: Dockerfile
+      target: urbreath
+      additional_contexts:
+        urbreath-config: .
     container_name: superset_v6
     ports:
       - "17789:8088"
@@ -71,6 +80,7 @@ services:
       - superset_home_v6:/app/superset_home
     networks:
       - superset_net_v6
+      # - superset_network_dev
     depends_on:
       - db_v6
       - redis_v6
@@ -89,6 +99,7 @@ services:
     container_name: redis_v6
     networks:
       - superset_net_v6
+      # - superset_network_dev
 
   # ?? PostgreSQL per dati urbreath_dev (clone dal dump prod) ????????
   otherdb_v6:
@@ -104,6 +115,7 @@ services:
       - other_db_data_v6:/var/lib/postgresql/data
     networks:
       - superset_net_v6
+      # - superset_network_dev
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U external_user -d urbreath_dev"]
       interval: 5s
@@ -121,6 +133,7 @@ services:
       - "17710:80"
     networks:
       - superset_net_v6
+      # - superset_network_dev
 
   # ?? Frontend React Embedded ???????????????????????????????????????
   embeddedsuperset_v6:
@@ -155,10 +168,12 @@ services:
       - REACT_APP_DASHBOARD_TALLINN_LINK=${REACT_APP_DASHBOARD_TALLINN_LINK}
     ports:
       - "3001:80"
+      # - "3021:80"
     depends_on:
       - superset_v6
     networks:
       - superset_net_v6
+      # - superset_network_dev
 
 volumes:
   db_data_v6:

@@ -141,12 +141,24 @@
     });
   }
 
+  function hasSourceLanguageOption(select) {
+    return (
+      select.options.length > 1 &&
+      Array.prototype.some.call(select.options, function (option) {
+        return option.value === "";
+      })
+    );
+  }
+
+  function hasRequestedLanguageOption(select, language) {
+    return language === PAGE_LANGUAGE
+      ? hasSourceLanguageOption(select)
+      : hasLanguageOption(select, language);
+  }
+
   function waitForTranslateSelect(language, sequence) {
     var existingSelect = getTranslateSelect();
-    if (
-      existingSelect &&
-      (language === PAGE_LANGUAGE || hasLanguageOption(existingSelect, language))
-    ) {
+    if (existingSelect && hasRequestedLanguageOption(existingSelect, language)) {
       return Promise.resolve(existingSelect);
     }
 
@@ -154,10 +166,7 @@
     return new Promise(function (resolve, reject) {
       var observer = new MutationObserver(function () {
         var select = getTranslateSelect();
-        if (
-          !select ||
-          (language !== PAGE_LANGUAGE && !hasLanguageOption(select, language))
-        ) {
+        if (!select || !hasRequestedLanguageOption(select, language)) {
           return;
         }
 
