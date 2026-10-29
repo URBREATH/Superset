@@ -1,11 +1,9 @@
 # docker-compose-v6.yml - Stack Superset 6.1.0 per test WSL
-# Porta Superset: 17789  |  Porta urbreath_dev: 5434  |  Frontend: 3001
+# Porta Superset: 17789  |  Porta urbreath_dev: 5434  |  Frontend: 3021
 
 networks:
-  superset_net_v6:
+  superset_network_dev:
     external: true
-  # superset_network_dev:
-  #   external: true
 
 services:
 
@@ -20,8 +18,7 @@ services:
     volumes:
       - db_data_v6:/var/lib/postgresql/data
     networks:
-      - superset_net_v6
-      # - superset_network_dev
+      - superset_network_dev
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U superset -d superset"]
       interval: 5s
@@ -79,8 +76,7 @@ services:
     volumes:
       - superset_home_v6:/app/superset_home
     networks:
-      - superset_net_v6
-      # - superset_network_dev
+      - superset_network_dev
     depends_on:
       - db_v6
       - redis_v6
@@ -98,8 +94,7 @@ services:
     image: redis:latest
     container_name: redis_v6
     networks:
-      - superset_net_v6
-      # - superset_network_dev
+      - superset_network_dev
 
   # ?? PostgreSQL per dati urbreath_dev (clone dal dump prod) ????????
   otherdb_v6:
@@ -114,8 +109,7 @@ services:
     volumes:
       - other_db_data_v6:/var/lib/postgresql/data
     networks:
-      - superset_net_v6
-      # - superset_network_dev
+      - superset_network_dev
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U external_user -d urbreath_dev"]
       interval: 5s
@@ -132,8 +126,7 @@ services:
     ports:
       - "17710:80"
     networks:
-      - superset_net_v6
-      # - superset_network_dev
+      - superset_network_dev
 
   # ?? Frontend React Embedded ???????????????????????????????????????
   embeddedsuperset_v6:
@@ -167,13 +160,11 @@ services:
       - REACT_APP_DASHBOARD_LEUVEN_LINK=${REACT_APP_DASHBOARD_LEUVEN_LINK}
       - REACT_APP_DASHBOARD_TALLINN_LINK=${REACT_APP_DASHBOARD_TALLINN_LINK}
     ports:
-      - "3001:80"
-      # - "3021:80"
+      - "3021:80"
     depends_on:
       - superset_v6
     networks:
-      - superset_net_v6
-      # - superset_network_dev
+      - superset_network_dev
 
 volumes:
   db_data_v6:
