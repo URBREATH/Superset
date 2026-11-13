@@ -36,6 +36,28 @@ FEATURE_FLAGS = {
     "ALERT_REPORTS": True,
     "EMBEDDED_SUPERSET": True,
     "DASHBOARD_RBAC": _env_bool("DASHBOARD_RBAC", True),
+    "ESCAPE_MARKDOWN_HTML": False,
+}
+
+# Allow HTML rendering in Markdown while keeping sanitization enabled.
+HTML_SANITIZATION = True
+HTML_SANITIZATION_SCHEMA_EXTENSIONS = {
+    "tagNames": ["iframe"],
+    "attributes": {
+        "iframe": [
+            "src",
+            "width",
+            "height",
+            "title",
+            "allow",
+            "allowfullscreen",
+            "referrerpolicy",
+            "loading",
+        ],
+    },
+    "protocols": {
+        "src": ["https"],
+    },
 }
 
 TALISMAN_ENABLED = _env_bool("TALISMAN_ENABLED", False)
