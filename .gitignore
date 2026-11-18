@@ -1,4 +1,5 @@
 /urbreath-ds-embedded/node_modules/
+/urbreath-ds-embedded/build/
 /.metadata/
 /backup/
 /.idea/
