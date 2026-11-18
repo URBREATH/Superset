@@ -1,0 +1,195 @@
+# docker-compose-v6.yml - Stack Superset 6.1.0 per test WSL
+# Porta Superset: 17789  |  Porta urbreath_dev: 5434  |  Frontend: 3001
+
+networks:
+  superset_net_v6:
+    external: true
+  # superset_network_dev:
+  #   external: true
+
+services:
+
+  # ?? PostgreSQL per metadati Superset (DB fresco) ??????????????????
+  db_v6:
+    image: postgres:16
+    container_name: superset-db-v6
+    environment:
+      POSTGRES_DB: superset
+      POSTGRES_USER: superset
+      POSTGRES_PASSWORD: superset
+    volumes:
+      - db_data_v6:/var/lib/postgresql/data
+    networks:
+      - superset_net_v6
+      # - superset_network_dev
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U superset -d superset"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  superset_v6:
+    image: urbreath-superset:6.1.0-urbreath.1
+    build:
+      context: ./superset-source
+      dockerfile: Dockerfile
+      target: urbreath
+      additional_contexts:
+        urbreath-config: .
+    container_name: superset_v6
+    ports:
+      - "17789:8088"
+    environment:
+      - SUPERSET_ENV=${SUPERSET_ENV}
+      - SUPERSET_LOAD_EXAMPLES=${SUPERSET_LOAD_EXAMPLES}
+      - SUPERSET_ADMIN_USERNAME=${SUPERSET_ADMIN_USERNAME}
+      - SUPERSET_ADMIN_EMAIL=${SUPERSET_ADMIN_EMAIL}
+      - SUPERSET_ADMIN_PASSWORD=${SUPERSET_ADMIN_PASSWORD}
+      - SUPERSET_ADMIN_FIRSTNAME=${SUPERSET_ADMIN_FIRSTNAME}
+      - SUPERSET_ADMIN_LASTNAME=${SUPERSET_ADMIN_LASTNAME}
+      - SUPERSET_GAMMA_USERNAME=${SUPERSET_GAMMA_USERNAME}
+      - SUPERSET_GAMMA_EMAIL=${SUPERSET_GAMMA_EMAIL}
+      - SUPERSET_GAMMA_PASSWORD=${SUPERSET_GAMMA_PASSWORD}
+      - SUPERSET_GAMMA_FIRSTNAME=${SUPERSET_GAMMA_FIRSTNAME}
+      - SUPERSET_GAMMA_LASTNAME=${SUPERSET_GAMMA_LASTNAME}
+      - SUPERSET_TECHNICAL_USERNAME=${SUPERSET_TECHNICAL_USERNAME}
+      - SUPERSET_TECHNICAL_EMAIL=${SUPERSET_TECHNICAL_EMAIL}
+      - SUPERSET_TECHNICAL_PASSWORD=${SUPERSET_TECHNICAL_PASSWORD}
+      - SUPERSET_TECHNICAL_FIRSTNAME=${SUPERSET_TECHNICAL_FIRSTNAME}
+      - SUPERSET_TECHNICAL_LASTNAME=${SUPERSET_TECHNICAL_LASTNAME}
+      - SUPERSET_SECRET_KEY=${SUPERSET_SECRET_KEY}
+      - ENABLE_KEYCLOAK_OAUTH=${ENABLE_KEYCLOAK_OAUTH}
+      - KEYCLOAK_BASE_URL=${KEYCLOAK_BASE_URL}
+      - KEYCLOAK_REALM=${KEYCLOAK_REALM}
+      - KEYCLOAK_CLIENT_ID=${KEYCLOAK_CLIENT_ID}
+      - KEYCLOAK_CLIENT_SECRET=${KEYCLOAK_CLIENT_SECRET}
+      - AUTH_USER_REGISTRATION_ROLE=${AUTH_USER_REGISTRATION_ROLE}
+      - AUTH_ROLES_SYNC_AT_LOGIN=${AUTH_ROLES_SYNC_AT_LOGIN}
+      - DASHBOARD_RBAC=${DASHBOARD_RBAC}
+      - ENABLE_PROXY_FIX=${ENABLE_PROXY_FIX}
+      - WTF_CSRF_ENABLED=${WTF_CSRF_ENABLED}
+      - TALISMAN_ENABLED=${TALISMAN_ENABLED}
+      - X_FRAME_OPTIONS=${X_FRAME_OPTIONS}
+      - CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS}
+      - SQLALCHEMY_DATABASE_URI=postgresql+psycopg2://superset:superset@db_v6:5432/superset
+      - MAPBOX_API_KEY=${MAPBOX_API_KEY}
+      - PYTHONPATH=/app/pythonpath
+      - MAX_DASHBOARD_SIZE=10485760
+      - SUPERSET_DASHBOARD_POSITION_DATA_LIMIT=10000000
+    volumes:
+      - superset_home_v6:/app/superset_home
+    networks:
+      - superset_net_v6
+      # - superset_network_dev
+    depends_on:
+      - db_v6
+      - redis_v6
+    entrypoint: >
+      bash -c "
+      superset db upgrade &&
+      superset fab create-admin --username ${SUPERSET_ADMIN_USERNAME} --firstname ${SUPERSET_ADMIN_FIRSTNAME} --lastname ${SUPERSET_ADMIN_LASTNAME} --email ${SUPERSET_ADMIN_EMAIL} --password ${SUPERSET_ADMIN_PASSWORD} 2>/dev/null || superset fab reset-password --username ${SUPERSET_ADMIN_USERNAME} --password ${SUPERSET_ADMIN_PASSWORD} &&
+      superset fab create-user --username ${SUPERSET_GAMMA_USERNAME} --firstname ${SUPERSET_GAMMA_FIRSTNAME} --lastname ${SUPERSET_GAMMA_LASTNAME} --email ${SUPERSET_GAMMA_EMAIL} --password ${SUPERSET_GAMMA_PASSWORD} --role Gamma 2>/dev/null || superset fab reset-password --username ${SUPERSET_GAMMA_USERNAME} --password ${SUPERSET_GAMMA_PASSWORD} &&
+      superset fab create-user --username ${SUPERSET_TECHNICAL_USERNAME} --firstname ${SUPERSET_TECHNICAL_FIRSTNAME} --lastname ${SUPERSET_TECHNICAL_LASTNAME} --email ${SUPERSET_TECHNICAL_EMAIL} --password ${SUPERSET_TECHNICAL_PASSWORD} --role Gamma 2>/dev/null || superset fab reset-password --username ${SUPERSET_TECHNICAL_USERNAME} --password ${SUPERSET_TECHNICAL_PASSWORD} &&
+      superset init && gunicorn --bind 0.0.0.0:8088 --workers 1 --timeout 600 'superset.app:create_app()'"
+    restart: unless-stopped
+
+  # ?? Redis ?????????????????????????????????????????????????????????
+  redis_v6:
+    image: redis:latest
+    container_name: redis_v6
+    networks:
+      - superset_net_v6
+      # - superset_network_dev
+
+  # ?? PostgreSQL per dati urbreath_dev (clone dal dump prod) ????????
+  otherdb_v6:
+    image: postgres:16
+    container_name: external-postgres-v6
+    ports:
+      - "5434:5432"
+    environment:
+      POSTGRES_DB: urbreath_dev
+      POSTGRES_USER: external_user
+      POSTGRES_PASSWORD: external_pass
+    volumes:
+      - other_db_data_v6:/var/lib/postgresql/data
+    networks:
+      - superset_net_v6
+      # - superset_network_dev
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U external_user -d urbreath_dev"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # ?? pgAdmin (opzionale, per ispezione DB) ?????????????????????????
+  admindb_v6:
+    image: dpage/pgadmin4
+    container_name: pgadmin_v6
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=admin@urbreath.local
+      - PGADMIN_DEFAULT_PASSWORD=admin
+    ports:
+      - "17710:80"
+    networks:
+      - superset_net_v6
+      # - superset_network_dev
+
+  # ?? Frontend React Embedded ???????????????????????????????????????
+  embeddedsuperset_v6:
+    build:
+      context: ./urbreath-ds-embedded
+      args:
+        REACT_APP_SUPERSET_URL: ${REACT_APP_SUPERSET_URL}
+        REACT_APP_SUPERSET_TECHNICAL_USERNAME: ${REACT_APP_SUPERSET_TECHNICAL_USERNAME}
+        REACT_APP_SUPERSET_TECHNICAL_PASSWORD: ${REACT_APP_SUPERSET_TECHNICAL_PASSWORD}
+        REACT_APP_POSTMESSAGE_ALLOWED_ORIGINS: ${REACT_APP_POSTMESSAGE_ALLOWED_ORIGINS}
+        REACT_APP_DASHBOARD_MADRID: ${REACT_APP_DASHBOARD_MADRID}
+        REACT_APP_DASHBOARD_CLUJ: ${REACT_APP_DASHBOARD_CLUJ}
+        REACT_APP_DASHBOARD_TALLINN: ${REACT_APP_DASHBOARD_TALLINN}
+        REACT_APP_DASHBOARD_LEUVEN: ${REACT_APP_DASHBOARD_LEUVEN}
+        REACT_APP_DASHBOARD_MADRID_LINK: ${REACT_APP_DASHBOARD_MADRID_LINK}
+        REACT_APP_DASHBOARD_CLUJ_LINK: ${REACT_APP_DASHBOARD_CLUJ_LINK}
+        REACT_APP_DASHBOARD_LEUVEN_LINK: ${REACT_APP_DASHBOARD_LEUVEN_LINK}
+        REACT_APP_DASHBOARD_TALLINN_LINK: ${REACT_APP_DASHBOARD_TALLINN_LINK}
+        REACT_APP_DASHBOARD_CLUJ_KPI_ENVIRONMENT: ${REACT_APP_DASHBOARD_CLUJ_KPI_ENVIRONMENT}
+        REACT_APP_DASHBOARD_CLUJ_KPI_ENVIRONMENT_LINK: ${REACT_APP_DASHBOARD_CLUJ_KPI_ENVIRONMENT_LINK}
+        REACT_APP_DASHBOARD_CLUJ_KPI_QUALITY: ${REACT_APP_DASHBOARD_CLUJ_KPI_QUALITY}
+        REACT_APP_DASHBOARD_CLUJ_KPI_QUALITY_LINK: ${REACT_APP_DASHBOARD_CLUJ_KPI_QUALITY_LINK}
+        REACT_APP_DASHBOARD_LEUVEN_KPI_MOBILITY: ${REACT_APP_DASHBOARD_LEUVEN_KPI_MOBILITY}
+        REACT_APP_DASHBOARD_LEUVEN_KPI_MOBILITY_LINK: ${REACT_APP_DASHBOARD_LEUVEN_KPI_MOBILITY_LINK}
+        REACT_APP_DASHBOARD_TALLINN_KPI_QUALITY: ${REACT_APP_DASHBOARD_TALLINN_KPI_QUALITY}
+        REACT_APP_DASHBOARD_TALLINN_KPI_QUALITY_LINK: ${REACT_APP_DASHBOARD_TALLINN_KPI_QUALITY_LINK}
+    container_name: embeddedsuperset_v6
+    environment:
+      - REACT_APP_SUPERSET_URL=${REACT_APP_SUPERSET_URL}
+      - REACT_APP_SUPERSET_TECHNICAL_USERNAME=${REACT_APP_SUPERSET_TECHNICAL_USERNAME}
+      - REACT_APP_SUPERSET_TECHNICAL_PASSWORD=${REACT_APP_SUPERSET_TECHNICAL_PASSWORD}
+      - REACT_APP_POSTMESSAGE_ALLOWED_ORIGINS=${REACT_APP_POSTMESSAGE_ALLOWED_ORIGINS}
+      - REACT_APP_DASHBOARD_MADRID=${REACT_APP_DASHBOARD_MADRID}
+      - REACT_APP_DASHBOARD_CLUJ=${REACT_APP_DASHBOARD_CLUJ}
+      - REACT_APP_DASHBOARD_TALLINN=${REACT_APP_DASHBOARD_TALLINN}
+      - REACT_APP_DASHBOARD_LEUVEN=${REACT_APP_DASHBOARD_LEUVEN}
+      - REACT_APP_DASHBOARD_MADRID_LINK=${REACT_APP_DASHBOARD_MADRID_LINK}
+      - REACT_APP_DASHBOARD_CLUJ_LINK=${REACT_APP_DASHBOARD_CLUJ_LINK}
+      - REACT_APP_DASHBOARD_LEUVEN_LINK=${REACT_APP_DASHBOARD_LEUVEN_LINK}
+      - REACT_APP_DASHBOARD_TALLINN_LINK=${REACT_APP_DASHBOARD_TALLINN_LINK}
+      - REACT_APP_DASHBOARD_CLUJ_KPI_ENVIRONMENT=${REACT_APP_DASHBOARD_CLUJ_KPI_ENVIRONMENT}
+      - REACT_APP_DASHBOARD_CLUJ_KPI_ENVIRONMENT_LINK=${REACT_APP_DASHBOARD_CLUJ_KPI_ENVIRONMENT_LINK}
+      - REACT_APP_DASHBOARD_CLUJ_KPI_QUALITY=${REACT_APP_DASHBOARD_CLUJ_KPI_QUALITY}
+      - REACT_APP_DASHBOARD_CLUJ_KPI_QUALITY_LINK=${REACT_APP_DASHBOARD_CLUJ_KPI_QUALITY_LINK}
+      - REACT_APP_DASHBOARD_LEUVEN_KPI_MOBILITY=${REACT_APP_DASHBOARD_LEUVEN_KPI_MOBILITY}
+      - REACT_APP_DASHBOARD_LEUVEN_KPI_MOBILITY_LINK=${REACT_APP_DASHBOARD_LEUVEN_KPI_MOBILITY_LINK}
+      - REACT_APP_DASHBOARD_TALLINN_KPI_QUALITY=${REACT_APP_DASHBOARD_TALLINN_KPI_QUALITY}
+      - REACT_APP_DASHBOARD_TALLINN_KPI_QUALITY_LINK=${REACT_APP_DASHBOARD_TALLINN_KPI_QUALITY_LINK}
+    ports:
+      - "3001:80"
+      # - "3021:80"
+    depends_on:
+      - superset_v6
+    networks:
+      - superset_net_v6
+      # - superset_network_dev
+  db_data_v6:
+  superset_home_v6:
+  other_db_data_v6:

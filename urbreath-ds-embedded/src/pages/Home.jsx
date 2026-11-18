@@ -50,6 +50,51 @@ function Home() {
     },
   ];
 
+  const kpiCards = [
+    {
+      id: 5,
+      title: "Cluj-Napoca Dev KPI Environment",
+      subtitle: "Romania",
+      description: <>Explore Cluj-Napoca's development KPIs for environment.</>,
+      image:
+        "https://urbreath.virtualcitymap.de/stories/cluj/datasource-data/storyExample/assets/images/main.png",
+      dashboardId: process.env.REACT_APP_DASHBOARD_CLUJ_KPI_ENVIRONMENT,
+      link: process.env.REACT_APP_DASHBOARD_CLUJ_KPI_ENVIRONMENT_LINK,
+    },
+    {
+      id: 6,
+      title: "Cluj-Napoca Dev KPI Quality",
+      subtitle: "Romania",
+      description: <>Explore Cluj-Napoca's development KPIs for quality.</>,
+      image:
+        "https://urbreath.virtualcitymap.de/stories/cluj/datasource-data/storyExample/assets/images/main.png",
+      dashboardId: process.env.REACT_APP_DASHBOARD_CLUJ_KPI_QUALITY,
+      link: process.env.REACT_APP_DASHBOARD_CLUJ_KPI_QUALITY_LINK,
+    },
+    {
+      id: 7,
+      title: "Leuven Dev KPI Mobility",
+      subtitle: "Belgium",
+      description: <>Explore Leuven's development KPIs for mobility.</>,
+      image:
+        "https://urbreath.virtualcitymap.de/stories/leuven/datasource-data/storyExample/assets/images/main.png",
+      dashboardId: process.env.REACT_APP_DASHBOARD_LEUVEN_KPI_MOBILITY,
+      link: process.env.REACT_APP_DASHBOARD_LEUVEN_KPI_MOBILITY_LINK,
+    },
+    {
+      id: 8,
+      title: "Tallinn Dev KPI",
+      subtitle: "Estonia",
+      description: <>Explore Tallinn's development KPI dashboard.</>,
+      image:
+        "https://urbreath.virtualcitymap.de/stories/tallinn/datasource-data/storyExample/assets/images/Main.png",
+      dashboardId: process.env.REACT_APP_DASHBOARD_TALLINN_KPI_QUALITY,
+      link: process.env.REACT_APP_DASHBOARD_TALLINN_KPI_QUALITY_LINK,
+    },
+  ].filter((card) => card.dashboardId && card.link);
+
+  const allCards = [...cards, ...kpiCards];
+
   return (
     <div className="home-container">
       <header className="home-header">
@@ -60,7 +105,7 @@ function Home() {
       </header>
 
       <div className="card-grid">
-        {cards.map((card) => (
+        {allCards.map((card) => (
           <Link to={card.link} key={card.id} className="card">
             <img src={card.image} alt={card.title} className="card-image" />
             <div className="card-body">

@@ -1,8 +1,8 @@
 # docker-compose-v6.yml - Stack Superset 6.1.0 per test WSL
-# Porta Superset: 17789  |  Porta urbreath_dev: 5434  |  Frontend: 3021
+# Porta Superset: 17789  |  Porta urbreath_dev: 5434  |  Frontend: 3001
 
 networks:
-  superset_network_dev:
+  superset_net_v6:
     external: true
 
 services:
@@ -18,7 +18,7 @@ services:
     volumes:
       - db_data_v6:/var/lib/postgresql/data
     networks:
-      - superset_network_dev
+      - superset_net_v6
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U superset -d superset"]
       interval: 5s
@@ -76,7 +76,7 @@ services:
     volumes:
       - superset_home_v6:/app/superset_home
     networks:
-      - superset_network_dev
+      - superset_net_v6
     depends_on:
       - db_v6
       - redis_v6
@@ -94,7 +94,7 @@ services:
     image: redis:latest
     container_name: redis_v6
     networks:
-      - superset_network_dev
+      - superset_net_v6
 
   # ?? PostgreSQL per dati urbreath_dev (clone dal dump prod) ????????
   otherdb_v6:
@@ -109,7 +109,7 @@ services:
     volumes:
       - other_db_data_v6:/var/lib/postgresql/data
     networks:
-      - superset_network_dev
+      - superset_net_v6
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U external_user -d urbreath_dev"]
       interval: 5s
@@ -126,7 +126,7 @@ services:
     ports:
       - "17710:80"
     networks:
-      - superset_network_dev
+      - superset_net_v6
 
   # ?? Frontend React Embedded ???????????????????????????????????????
   embeddedsuperset_v6:
@@ -145,6 +145,14 @@ services:
         REACT_APP_DASHBOARD_CLUJ_LINK: ${REACT_APP_DASHBOARD_CLUJ_LINK}
         REACT_APP_DASHBOARD_LEUVEN_LINK: ${REACT_APP_DASHBOARD_LEUVEN_LINK}
         REACT_APP_DASHBOARD_TALLINN_LINK: ${REACT_APP_DASHBOARD_TALLINN_LINK}
+        REACT_APP_DASHBOARD_CLUJ_KPI_ENVIRONMENT: ${REACT_APP_DASHBOARD_CLUJ_KPI_ENVIRONMENT}
+        REACT_APP_DASHBOARD_CLUJ_KPI_ENVIRONMENT_LINK: ${REACT_APP_DASHBOARD_CLUJ_KPI_ENVIRONMENT_LINK}
+        REACT_APP_DASHBOARD_CLUJ_KPI_QUALITY: ${REACT_APP_DASHBOARD_CLUJ_KPI_QUALITY}
+        REACT_APP_DASHBOARD_CLUJ_KPI_QUALITY_LINK: ${REACT_APP_DASHBOARD_CLUJ_KPI_QUALITY_LINK}
+        REACT_APP_DASHBOARD_LEUVEN_KPI_MOBILITY: ${REACT_APP_DASHBOARD_LEUVEN_KPI_MOBILITY}
+        REACT_APP_DASHBOARD_LEUVEN_KPI_MOBILITY_LINK: ${REACT_APP_DASHBOARD_LEUVEN_KPI_MOBILITY_LINK}
+        REACT_APP_DASHBOARD_TALLINN_KPI_QUALITY: ${REACT_APP_DASHBOARD_TALLINN_KPI_QUALITY}
+        REACT_APP_DASHBOARD_TALLINN_KPI_QUALITY_LINK: ${REACT_APP_DASHBOARD_TALLINN_KPI_QUALITY_LINK}
     container_name: embeddedsuperset_v6
     environment:
       - REACT_APP_SUPERSET_URL=${REACT_APP_SUPERSET_URL}
@@ -159,12 +167,20 @@ services:
       - REACT_APP_DASHBOARD_CLUJ_LINK=${REACT_APP_DASHBOARD_CLUJ_LINK}
       - REACT_APP_DASHBOARD_LEUVEN_LINK=${REACT_APP_DASHBOARD_LEUVEN_LINK}
       - REACT_APP_DASHBOARD_TALLINN_LINK=${REACT_APP_DASHBOARD_TALLINN_LINK}
+      - REACT_APP_DASHBOARD_CLUJ_KPI_ENVIRONMENT=${REACT_APP_DASHBOARD_CLUJ_KPI_ENVIRONMENT}
+      - REACT_APP_DASHBOARD_CLUJ_KPI_ENVIRONMENT_LINK=${REACT_APP_DASHBOARD_CLUJ_KPI_ENVIRONMENT_LINK}
+      - REACT_APP_DASHBOARD_CLUJ_KPI_QUALITY=${REACT_APP_DASHBOARD_CLUJ_KPI_QUALITY}
+      - REACT_APP_DASHBOARD_CLUJ_KPI_QUALITY_LINK=${REACT_APP_DASHBOARD_CLUJ_KPI_QUALITY_LINK}
+      - REACT_APP_DASHBOARD_LEUVEN_KPI_MOBILITY=${REACT_APP_DASHBOARD_LEUVEN_KPI_MOBILITY}
+      - REACT_APP_DASHBOARD_LEUVEN_KPI_MOBILITY_LINK=${REACT_APP_DASHBOARD_LEUVEN_KPI_MOBILITY_LINK}
+      - REACT_APP_DASHBOARD_TALLINN_KPI_QUALITY=${REACT_APP_DASHBOARD_TALLINN_KPI_QUALITY}
+      - REACT_APP_DASHBOARD_TALLINN_KPI_QUALITY_LINK=${REACT_APP_DASHBOARD_TALLINN_KPI_QUALITY_LINK}
     ports:
-      - "3021:80"
+      - "3001:80"
     depends_on:
       - superset_v6
     networks:
-      - superset_network_dev
+      - superset_net_v6
 
 volumes:
   db_data_v6:
