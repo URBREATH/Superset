@@ -54,32 +54,34 @@ function Home() {
     {
       id: 5,
       city: "Cluj-Napoca",
-      title: "KPI Environment",
+      title: "KPI Environment - Noise",
       dashboardId: process.env.REACT_APP_DASHBOARD_CLUJ_KPI_ENVIRONMENT,
       link: process.env.REACT_APP_DASHBOARD_CLUJ_KPI_ENVIRONMENT_LINK,
     },
     {
       id: 6,
       city: "Cluj-Napoca",
-      title: "KPI Quality",
+      title: "KPI City Quality & Livability",
       dashboardId: process.env.REACT_APP_DASHBOARD_CLUJ_KPI_QUALITY,
       link: process.env.REACT_APP_DASHBOARD_CLUJ_KPI_QUALITY_LINK,
     },
     {
       id: 7,
       city: "Leuven",
-      title: "KPI Mobility",
+      title: "KPI Mobility - Traffic",
       dashboardId: process.env.REACT_APP_DASHBOARD_LEUVEN_KPI_MOBILITY,
       link: process.env.REACT_APP_DASHBOARD_LEUVEN_KPI_MOBILITY_LINK,
     },
     {
       id: 8,
       city: "Tallinn",
-      title: "KPI Quality",
+      title: "KPI City Quality & Livability",
       dashboardId: process.env.REACT_APP_DASHBOARD_TALLINN_KPI_QUALITY,
       link: process.env.REACT_APP_DASHBOARD_TALLINN_KPI_QUALITY_LINK,
     },
   ].filter((card) => card.dashboardId && card.link);
+
+  const cityDashboardLabel = "City data dashboard";
 
   return (
     <div className="home-container">
@@ -90,32 +92,39 @@ function Home() {
         </p>
       </header>
 
-      <div className="card-grid">
-        {cards.map((card) => {
-          const cityKpiCards = kpiCards.filter((kpi) => kpi.city === card.title);
-
-          return (
-            <div className="city-column" key={card.id}>
-              <Link to={card.link} className="card">
-                <img src={card.image} alt={card.title} className="card-image" />
-                <div className="card-body">
-                  <small className="card-subtitle">{card.subtitle}</small>
-                  <h3 className="card-title">{card.title}</h3>
-                  <p className="card-description">{card.description}</p>
-                </div>
-              </Link>
-              {cityKpiCards.length > 0 && (
-                <div className="kpi-links" aria-label={`${card.title} KPI dashboards`}>
-                  {cityKpiCards.map((kpi) => (
-                    <Link to={kpi.link} key={kpi.id} className="kpi-link">
-                      {kpi.title}
-                    </Link>
-                  ))}
-                </div>
+      <div className="city-directory">
+        <div className="city-card-grid">
+          {cards.map((card) => (
+            <article className="city-card" key={card.id}>
+              <img src={card.image} alt="" className="card-image" />
+              <div className="card-body">
+                <small className="card-subtitle">{card.subtitle}</small>
+                <h3 className="card-title">{card.title}</h3>
+                <p className="card-description">{card.description}</p>
+              </div>
+            </article>
+          ))}
+        </div>
+        <div className="city-actions-grid">
+          {cards.map((card) => (
+            <div className="city-actions" key={card.id}>
+              {card.link && (
+                <Link to={card.link} className="dashboard-button">
+                  {cityDashboardLabel}
+                  <span aria-hidden="true">→</span>
+                </Link>
               )}
+              {kpiCards
+                .filter((kpi) => kpi.city === card.title)
+                .map((kpi) => (
+                  <Link to={kpi.link} key={kpi.id} className="dashboard-button">
+                    {kpi.title}
+                    <span aria-hidden="true">→</span>
+                  </Link>
+                ))}
             </div>
-          );
-        })}
+          ))}
+        </div>
       </div>
     </div>
   );
